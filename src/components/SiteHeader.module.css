@@ -1,0 +1,64 @@
+.header {
+  display: block;
+}
+
+.list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 120px;
+  padding-block: 34px 23px;
+  border-bottom: 1px solid var(--rule);
+  width: 100%;
+  justify-content: end;
+  /* The last item sits a little wider of its neighbour in the design. */
+  column-gap: 0;
+}
+
+.list li:last-child {
+  margin-left: 20px;
+}
+
+.link {
+  position: relative;
+  display: inline-block;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink);
+}
+
+.link[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: -8px;
+  bottom: -7px;
+  height: 2px;
+  background: var(--madder);
+}
+
+.link:hover {
+  text-decoration: none;
+  color: var(--madder);
+}
+
+@media (max-width: 767px) {
+  .list {
+    grid-auto-columns: auto;
+    justify-content: space-between;
+    padding-block: 24px 17px;
+  }
+
+  .list li:last-child {
+    margin-left: 0;
+  }
+
+  .link {
+    font-size: 13px;
+    line-height: 19px;
+  }
+
+  .link[aria-current="page"]::after {
+    right: -2px;
+    bottom: -9px;
+  }
+}

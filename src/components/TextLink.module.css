@@ -1,0 +1,18 @@
+.link {
+  color: var(--madder);
+  display: inline-block;
+}
+
+.md {
+  font-size: 15px;
+}
+
+.sm {
+  font-size: 14px;
+}
+
+@media (max-width: 767px) {
+  .md {
+    font-size: 16px;
+  }
+}

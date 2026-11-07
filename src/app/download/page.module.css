@@ -1,0 +1,71 @@
+.header {
+  padding-block: 72px 40px;
+}
+
+.title {
+  margin-top: 8px;
+  font-size: 56px;
+}
+
+.intro {
+  margin-top: 12px;
+  max-width: 55ch;
+  font-size: 20px;
+}
+
+.section {
+  border-top: 1px solid var(--rule);
+  padding-block: 39px 48px;
+}
+
+.list {
+  display: grid;
+  gap: 40px;
+  margin-top: 24px;
+}
+
+.option {
+  display: grid;
+  gap: 12px;
+  max-width: 72ch;
+  font-size: 17px;
+}
+
+.optionTitle {
+  font-size: 28px;
+}
+
+.command {
+  margin: 0;
+  overflow-x: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--linen);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+@media (max-width: 767px) {
+  .header {
+    padding-block: 47px 32px;
+  }
+
+  .title {
+    font-size: 44px;
+  }
+
+  .intro {
+    font-size: 18px;
+  }
+
+  .optionTitle {
+    font-size: 24px;
+  }
+}

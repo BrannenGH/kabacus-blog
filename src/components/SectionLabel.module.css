@@ -1,0 +1,24 @@
+.label {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.madder {
+  color: var(--madder);
+}
+
+.ink {
+  color: var(--ink);
+}
+
+.parchment {
+  color: var(--parchment);
+}
+
+@media (max-width: 767px) {
+  .label {
+    font-size: 11px;
+  }
+}
