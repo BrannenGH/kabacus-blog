@@ -1,0 +1,9 @@
+Copyright (c) 2026 Brannen Hall. All rights reserved.
+
+This repository, including its source code, text, illustrations and
+photographs, is not licensed for use, copying, modification or
+distribution except with the copyright holder's written permission.
+
+Third-party packages it depends on (listed in package.json), including the
+Inter and Playfair Display typefaces (SIL Open Font License 1.1), remain
+under their own licences.
