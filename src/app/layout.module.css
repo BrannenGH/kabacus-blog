@@ -1,0 +1,15 @@
+.skip {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 8px 14px;
+  background: var(--forest);
+  color: var(--linen);
+  border-radius: 4px;
+  transform: translateY(-200%);
+}
+
+.skip:focus-visible {
+  transform: none;
+}

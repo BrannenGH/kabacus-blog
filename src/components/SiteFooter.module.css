@@ -1,0 +1,39 @@
+.footer {
+  margin-top: 80px;
+}
+
+.inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 27px 45px;
+  border-top: 1px solid var(--rule);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.tagline {
+  white-space: pre-wrap;
+}
+
+.separator {
+  margin-inline: 1.6em;
+}
+
+.github {
+  font-size: 13px;
+  margin-right: 18px;
+}
+
+@media (max-width: 767px) {
+  .inner {
+    flex-direction: column;
+    font-size: 10px;
+    padding-block: 29px 48px;
+    gap: 12px;
+  }
+
+  .github {
+    font-size: 12px;
+  }
+}
