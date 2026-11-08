@@ -12,6 +12,39 @@ Hall's personal site.
 - Node.js 22.12 or newer (`.nvmrc`)
 - npm
 
+## Project skills
+
+All 166 skills from [qa-aman/claude-skills](https://github.com/qa-aman/claude-skills)
+are pinned as a Git submodule at `.claude/vendor/claude-skills` and exposed
+through relative symlinks in `.claude/skills`. Python 3 is needed only to
+regenerate or verify the links; no global installation is required.
+
+After cloning (or pulling a submodule change):
+
+```sh
+git submodule update --init --recursive
+python3 scripts/setup-skills --check
+```
+
+Use `git clone --recurse-submodules` to initialize a fresh checkout in one
+step. Open Claude Code from the repository root to use `/skill-name`.
+
+To deliberately update the pin, review an upstream commit, then run:
+
+```sh
+git -C .claude/vendor/claude-skills fetch origin
+git -C .claude/vendor/claude-skills checkout <reviewed-commit-sha>
+python3 scripts/setup-skills
+python3 scripts/setup-skills --check
+git add .claude/vendor/claude-skills .claude/skills
+```
+
+If the registry removed skills, remove their obsolete symlinks as reported
+by the script. Commit the pin and link changes together. Ordinary submodule
+initialization uses the recorded commit; it never follows the latest branch.
+CI checks that every registered skill has the correct link and `SKILL.md`.
+The vendored collection retains its upstream MIT license.
+
 ## Develop
 
 ```sh

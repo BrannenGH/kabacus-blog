@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Link every registered skill from the pinned submodule, or check the links."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--check', action='store_true', help='validate without changing files')
+args = parser.parse_args()
+root = Path(__file__).resolve().parent.parent
+vendor = root / '.claude/vendor/claude-skills'
+registry = vendor / 'skills.json'
+if not registry.is_file():
+    raise SystemExit('Initialize skills first: git submodule update --init --recursive')
+skills = json.loads(registry.read_text())['skills']
+links = root / '.claude/skills'
+expected = {}
+for key in skills:
+    name = key.split('/')[-1]
+    if name in expected:
+        raise SystemExit(f'Duplicate skill name: {name}')
+    source = vendor / 'skills' / (key if key.startswith('shared/') else f'by-role/{key}')
+    if not (source / 'SKILL.md').is_file():
+        raise SystemExit(f'Missing SKILL.md: {key}')
+    expected[name] = os.path.relpath(source, links)
+
+if not args.check:
+    links.mkdir(parents=True, exist_ok=True)
+for name, target in expected.items():
+    link = links / name
+    if link.is_symlink() and os.readlink(link) == target:
+        continue
+    if args.check or link.exists() or link.is_symlink():
+        raise SystemExit(f'Missing or unexpected link: {link}; expected {target}')
+    link.symlink_to(target, target_is_directory=True)
+
+extra = {p.name for p in links.iterdir()} - expected.keys() if links.is_dir() else set()
+if extra:
+    raise SystemExit(f'Unregistered skills (remove obsolete links after updating): {sorted(extra)}')
+print(f'{len(expected)} skills linked and verified against the pinned submodule.')

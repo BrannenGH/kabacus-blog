@@ -18,6 +18,15 @@ env:
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
+  skills:
+    name: pinned skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - run: python3 scripts/setup-skills --check
+
   checks:
     name: lint, types and unit tests
     runs-on: ubuntu-latest

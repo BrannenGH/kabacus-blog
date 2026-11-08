@@ -1,0 +1,3 @@
+[submodule ".claude/vendor/claude-skills"]
+	path = .claude/vendor/claude-skills
+	url = https://github.com/qa-aman/claude-skills.git
