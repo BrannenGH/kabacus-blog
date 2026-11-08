@@ -1,0 +1,63 @@
+# Copyright 2026 Brannen Hall. All rights reserved.
+
+name: Release
+
+# Every push to master that passes CI publishes
+# ghcr.io/<owner>/kabacus-blog:latest and :sha-<commit>. The server pulls
+# :latest on its own (podman auto-update), so publishing is deploying.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push supersedes an older one that hasn't published yet.
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  image:
+    name: publish image
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          image="ghcr.io/$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')/kabacus-blog"
+          podman build --format docker --platform linux/amd64 --iidfile "$RUNNER_TEMP/iid" \
+            --label "org.opencontainers.image.title=kabacus-blog" \
+            --label "org.opencontainers.image.description=The Kabacus website" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.licenses=LicenseRef-AllRightsReserved" \
+            --build-arg "SITE_URL=$SITE_URL" \
+            -t "$image:latest" -t "$image:sha-${GITHUB_SHA::7}" -f Containerfile .
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+          echo "IID=$(cat "$RUNNER_TEMP/iid")" >> "$GITHUB_ENV"
+      - name: Smoke test
+        run: scripts/smoke-image "$IID"
+      - name: Push
+        if: github.event_name == 'push'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The token goes in this job's own authfile, removed afterwards.
+        run: |
+          auth="$RUNNER_TEMP/auth.json"
+          echo "$TOKEN" | podman login --authfile "$auth" ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          podman push --authfile "$auth" "$IID" "docker://$IMAGE:sha-${GITHUB_SHA::7}"
+          podman push --authfile "$auth" "$IID" "docker://$IMAGE:latest"
+      - name: Forget the registry token
+        if: always()
+        run: rm -f "$RUNNER_TEMP/auth.json"
