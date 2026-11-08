@@ -92,6 +92,20 @@ Add an entry to `articles` in `src/content/wiki.ts` with a `group`, a
 `summary` and its blocks. It appears on `/wiki`, gets its own page and joins
 the sitemap. Check any command against `kabacus-cli --help`.
 
+## Container image
+
+`Containerfile` builds the standalone server on Node (Alpine), running as
+the unprivileged `node` user on port 3000. Every push to `master` that
+passes CI runs `.github/workflows/release.yml`: it builds the image, runs
+`scripts/smoke-image` against it and publishes
+`ghcr.io/brannengh/kabacus-blog:latest` and `:sha-<commit>`. The server
+follows `:latest` with Podman auto-update, so publishing is deploying.
+
+```sh
+podman build -f Containerfile -t kabacus-blog .
+scripts/smoke-image kabacus-blog
+```
+
 ## Licence
 
 All rights reserved; see `LICENSE`.

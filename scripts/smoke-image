@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# Copyright 2026 Brannen Hall. All rights reserved.
+
+# Starts the site's container image and checks that it serves every page,
+# a help article, the 404 page, robots.txt and the sitemap, and runs
+# unprivileged.
+#
+#   scripts/smoke-image <image>
+
+set -eu
+
+image="$1"
+port="${SMOKE_PORT:-3301}"
+name="kabacus-blog-smoke-$$"
+engine="${ENGINE:-podman}"
+
+"$engine" run -d --name "$name" -p "127.0.0.1:$port:3000" "$image" >/dev/null
+trap '"$engine" rm -f "$name" >/dev/null' EXIT
+
+base="http://127.0.0.1:$port"
+for _ in $(seq 1 30); do
+    curl -fs -o /dev/null "$base/" && break
+    sleep 1
+done
+
+failed=0
+expect() {
+    # expect <status> <path> [<content-type prefix>]
+    got="$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base$2")"
+    case "$got" in
+        "$1 ${3:-}"*) echo "ok   $2 -> $got" ;;
+        *) echo "FAIL $2: expected $1 ${3:-}, got $got" >&2; failed=1 ;;
+    esac
+}
+
+expect 200 / text/html
+expect 200 /download text/html
+expect 200 /wiki text/html
+expect 200 /wiki/getting-started text/html
+expect 404 /pricing text/html
+expect 200 /art/kabacus-panel.svg image/svg+xml
+expect 200 /robots.txt text/plain
+expect 200 /sitemap.xml application/xml
+
+user="$("$engine" exec "$name" id -u)"
+if [ "$user" = 0 ]; then
+    echo "FAIL the server runs as root" >&2
+    failed=1
+fi
+
+if [ "$failed" -ne 0 ]; then
+    "$engine" logs "$name" >&2 || true
+    exit 1
+fi
+echo "smoke-image: all checks pass"
