@@ -80,3 +80,27 @@ test("below 768 px every page is one column with 24 px gutters", async ({ page }
   expect(action!.x).toBe(24);
   expect(action!.width).toBe(342);
 });
+
+test("application screenshots load and the manual contents navigates", async ({ page }) => {
+  await page.goto("/");
+  const image = page.getByRole("img", { name: /Kabacus Overview/ });
+  await expect(image).toBeVisible();
+  expect(await image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0)).toBe(true);
+  await page.getByRole("link", { name: /Kabacus Overview/ }).click();
+  const contents = page.getByRole("navigation", { name: "On this page" });
+  await contents.getByRole("link", { name: "Worked calculation" }).click();
+  await expect(page).toHaveURL(/#section-/);
+  await expect(page.getByRole("heading", { name: "Worked calculation" })).toBeInViewport();
+});
+
+test("dark theme and restrained motion respect user preferences", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("dark");
+  expect(await page.locator("section").first().evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const path of ["/wiki/ledger-rules", "/wiki/transactions", "/wiki/troubleshooting"]) {
+    await page.goto(path);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  }
+});

@@ -1,4 +1,5 @@
-import type { Block } from "@/content/wiki";
+import Link from "next/link";
+import { findArticle, type Block } from "@/content/wiki";
 import styles from "./Prose.module.css";
 
 export function Prose({ blocks }: { blocks: readonly Block[] }) {
@@ -7,7 +8,7 @@ export function Prose({ blocks }: { blocks: readonly Block[] }) {
       {blocks.map((block, index) => {
         switch (block.type) {
           case "h2":
-            return <h2 key={index}>{block.text}</h2>;
+            return <h2 id={`section-${index}`} key={index}>{block.text}</h2>;
           case "p":
             return <p key={index}>{block.text}</p>;
           case "ul":
@@ -26,6 +27,20 @@ export function Prose({ blocks }: { blocks: readonly Block[] }) {
                 ))}
               </ol>
             );
+          case "table":
+            return <div className={styles.tableWrap} role="region" aria-label={block.columns.join(" / ")} tabIndex={0} key={index}>
+              <table><thead><tr>{block.columns.map((column) => <th scope="col" key={column}>{column}</th>)}</tr></thead>
+                <tbody>{block.rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} data-label={block.columns[j]}>{cell}</td>)}</tr>)}</tbody>
+              </table>
+            </div>;
+          case "links":
+            return <ul key={index}>{block.slugs.map((slug) => <li key={slug}><Link href={`/wiki/${slug}`}>{findArticle(slug)!.title}</Link></li>)}</ul>;
+          case "image":
+            return <figure key={index}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- self-hosted documentation screenshot */}
+              <a href={block.src}><img src={block.src} alt={block.alt} width={1440} height={1000} loading="lazy" /></a>
+              <figcaption>{block.caption}</figcaption>
+            </figure>;
           case "code":
             return (
               <pre key={index} tabIndex={0}>

@@ -33,3 +33,16 @@ describe("download content", () => {
     }
   });
 });
+
+describe("manual cross-references", () => {
+  it("links only to real articles and provides a section heading on each page", () => {
+    for (const article of articles) {
+      expect(article.blocks.some((block) => block.type === "h2"), article.slug).toBe(true);
+      for (const block of article.blocks) {
+        if (block.type === "links") {
+          for (const slug of block.slugs) expect(findArticle(slug), slug).toBeDefined();
+        }
+      }
+    }
+  });
+});

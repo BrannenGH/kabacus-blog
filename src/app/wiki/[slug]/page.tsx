@@ -35,7 +35,19 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <h1 className={styles.title}>{article.title}</h1>
           <p className={styles.summary}>{article.summary}</p>
         </header>
-        <Prose blocks={article.blocks} />
+        <div className={styles.reading}>
+          <aside className={styles.contents}>
+            <nav aria-label="On this page">
+              <p>On this page</p>
+              <ul>{article.blocks.map((block, index) => block.type === "h2" && (
+                <li key={index}><a href={`#section-${index}`}>{block.text}</a></li>
+              ))}</ul>
+            </nav>
+            <p className={styles.scope}>Application manual · Local books, web and shared servers. Examples use sample data.</p>
+            <Link href="/wiki/manual-scope">Scope and implementation status →</Link>
+          </aside>
+          <Prose blocks={article.blocks} />
+        </div>
       </article>
       <nav className={styles.more} aria-labelledby="more-heading">
         <SectionLabel as="h2" id="more-heading">

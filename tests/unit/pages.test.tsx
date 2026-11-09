@@ -22,6 +22,11 @@ describe("navigation", () => {
 });
 
 describe("home", () => {
+  it("shows real application screenshots labeled as sample books", () => {
+    render(<HomePage />);
+    expect(screen.getByRole("img", { name: /Kabacus Overview/ })).toHaveAttribute("src", "/screenshots/overview.webp");
+    expect(screen.getByText(/Sample books/)).toBeInTheDocument();
+  });
   it("explains every feature and links its help article", () => {
     render(<HomePage />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Books you can trust and check.");
@@ -57,6 +62,15 @@ describe("wiki", () => {
     render(await ArticlePage({ params: Promise.resolve({ slug: "getting-started" }) }));
     expect(screen.getByRole("heading", { level: 1, name: "Getting started" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem").length).toBeGreaterThan(4);
-    expect(screen.getByRole("link", { name: "Cash on Hand" })).toHaveAttribute("href", "/wiki/cash-on-hand");
+    expect(screen.getAllByRole("link", { name: "Cash on Hand" })[0]).toHaveAttribute("href", "/wiki/cash-on-hand");
+  });
+});
+
+describe("manual navigation", () => {
+  it("links headings from an article contents list", async () => {
+    render(await ArticlePage({params: Promise.resolve({slug: "getting-started"})}));
+    const contents = screen.getByRole("navigation", {name: "On this page"});
+    const link = within(contents).getByRole("link", {name: "Make your first books"});
+    expect(document.querySelector(link.getAttribute("href")!)).toHaveTextContent("Make your first books");
   });
 });

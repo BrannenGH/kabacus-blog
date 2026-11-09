@@ -18,8 +18,11 @@ export default function WikiPage() {
       <header className={styles.header}>
         <SectionLabel>Help wiki</SectionLabel>
         <h1 className={styles.title}>How Kabacus works.</h1>
-        <p className={styles.intro}>Short articles on everything Kabacus does, from your first transaction to running a server.</p>
+        <p className={styles.intro}>The application manual: step-by-step workflows, accounting rules, worked examples and administrator reference. Start with local books, or go straight to the task you need.</p>
       </header>
+      <nav className={styles.jump} aria-label="Manual sections">
+        {groups.map((group, index) => <a key={group} href={`#group-${index}`}>{group} <span aria-hidden="true">↘</span></a>)}
+      </nav>
       {groups.map((group, index) => (
         <section key={group} className={styles.group} aria-labelledby={`group-${index}`}>
           <SectionLabel as="h2" id={`group-${index}`}>

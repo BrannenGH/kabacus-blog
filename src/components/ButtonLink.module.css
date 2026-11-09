@@ -18,12 +18,12 @@
 
 .primary {
   background: var(--forest);
-  color: var(--linen);
+  color: var(--ink);
   padding-right: 44px;
 }
 
 .primary:hover {
-  background: var(--ink);
+  background: #bd3c40;
 }
 
 .secondary {
