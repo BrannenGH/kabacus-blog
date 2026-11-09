@@ -49,3 +49,21 @@
     font-size: 24px;
   }
 }
+
+.prose { min-width: 0; overflow-wrap: anywhere; line-height: 1.7; }
+.prose a { color: var(--madder); text-decoration: underline; text-underline-offset: 0.2em; }
+.prose h2 { scroll-margin-top: 24px; }
+.tableWrap { overflow-x: auto; }
+.prose table { border-collapse: collapse; width: 100%; font-size: 15px; text-align: left; }
+.prose th, .prose td { border-bottom: 1px solid var(--rule); padding: 12px; vertical-align: top; min-width: 130px; }
+.prose th { background: var(--linen); }
+.prose img { width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 6px; }
+.prose figcaption { color: var(--ink-muted); font-size: 14px; margin-top: 10px; }
+
+@media (max-width: 767px) {
+  .prose table, .prose tbody, .prose tr, .prose td { display: block; }
+  .prose thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .prose tr { padding-block: 12px; border-bottom: 1px solid var(--rule); }
+  .prose td { min-width: 0; border: 0; padding: 6px 0; }
+  .prose td::before { content: attr(data-label); display: block; color: var(--ink-muted); font-size: 12px; text-transform: uppercase; margin-bottom: 3px; }
+}

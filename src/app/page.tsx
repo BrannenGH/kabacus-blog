@@ -4,7 +4,7 @@ import { ButtonLink } from "@/components/ButtonLink";
 import { PageShell } from "@/components/PageShell";
 import { SectionLabel } from "@/components/SectionLabel";
 import { WovenIcon } from "@/components/WovenIcon";
-import { features, hero, principles } from "@/content/home";
+import { features, hero, principles, screenshots } from "@/content/home";
 import { site } from "@/content/site";
 import { pageMetadata } from "@/lib/metadata";
 import styles from "./page.module.css";
@@ -28,6 +28,21 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className={styles.showcase} aria-labelledby="screens-heading">
+        <SectionLabel as="h2" id="screens-heading">Inside Kabacus</SectionLabel>
+        <div className={styles.screens}>
+          {screenshots.map((shot) => (
+            <figure key={shot.src}>
+              <Link href={`/wiki/${shot.article}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- self-hosted, pre-sized screenshots */}
+                <img src={shot.src} alt={shot.alt} width={1440} height={1000} />
+              </Link>
+              <figcaption>{shot.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <p className={styles.more}>Sample books in the web app. Select a screenshot for its guide.</p>
+      </section>
       <section className={styles.section} aria-labelledby="features-heading">
         <SectionLabel as="h2" id="features-heading">
           01 / Features

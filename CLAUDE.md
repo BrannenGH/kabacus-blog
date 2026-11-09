@@ -10,13 +10,14 @@ Hard rules:
   their content and links to HTML. Add a client component (`"use client"`)
   only for a control that needs it, and keep it small.
 - **Follow the design.** Colours and spacing come from `src/app/globals.css`
-  (the Verdure palette). Desktop is a 1440 px canvas with 1296 px of content
+  (the charcoal and red palette). Desktop is a 1440 px canvas with 1296 px of content
   and 72 px margins; below 768 px it is one column with 24 px gutters.
 - **Content lives in `src/content/`**, not inline in pages. Help articles are
   typed data in `src/content/wiki.ts`.
-- **Accurate to Kabacus.** The site describes what Kabacus does today. The
-  specification lives in Kabacus's own project wiki: say "the specification",
-  never link to it. Check commands and flags against `kabacus-cli --help`.
+- **Accurate to Kabacus.** The site describes what Kabacus does today. The public
+  help manual explains the specification for users; distinguish current behavior
+  from planned features. Do not link to the internal specification wiki. Check
+  commands and flags against `kabacus-cli --help`.
 - **Self-host assets.** No third-party requests from the page: fonts come
   from the Fontsource packages via `next/font/local`.
 - **Accessible by default.** Semantic landmarks and headings, real links,

@@ -62,3 +62,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.jump { display: flex; flex-wrap: wrap; gap: 12px 24px; padding-bottom: 32px; color: var(--madder); }
+.jump a { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }

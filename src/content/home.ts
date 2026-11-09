@@ -75,3 +75,8 @@ export const principles = {
     "Books live in a file you own. A server is only for books shared between people or devices, and the app, the command line and the server all run the same code, so they always agree.",
   ],
 };
+
+export const screenshots = [
+  { src: "/screenshots/overview.webp", alt: "Kabacus Overview showing Cash on Hand, free money, reserves and credit", caption: "See what is free to spend. Overview separates available money from reserves and card payments.", article: "cash-on-hand" },
+  { src: "/screenshots/preview.webp", alt: "Kabacus transaction form with a balanced preview before saving", caption: "Review before saving. The application checks a transaction against the current revision of your books.", article: "transactions" },
+] as const;

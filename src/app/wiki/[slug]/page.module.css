@@ -63,3 +63,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.reading { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: var(--column-gap); align-items: start; }
+.contents { position: sticky; top: 24px; font-size: 14px; color: var(--ink-muted); }
+.contents nav > p { color: var(--ink); text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px; }
+.contents ul { display: grid; gap: 12px; margin-block: 16px 24px; }
+.contents a:hover { color: var(--madder); }
+.scope { border-top: 1px solid var(--rule); padding-top: 16px; margin-bottom: 12px; }
+@media (max-width: 767px) { .reading { grid-template-columns: minmax(0, 1fr); } .contents { position: static; } }

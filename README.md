@@ -5,7 +5,9 @@ with every feature, download links, and a help wiki that explains how
 Kabacus works. A server-rendered React app built with
 [Next.js](https://nextjs.org/) (App Router, React Server Components); pages
 ship no client-side JavaScript of their own. The design follows Brannen
-Hall's personal site.
+Hall's personal site, with a charcoal palette and red accents. The public
+manual includes task guides, accounting reference, troubleshooting and
+operator documentation, with real application screenshots using sample books.
 
 ## Requirements
 
@@ -109,3 +111,12 @@ scripts/smoke-image kabacus-blog
 ## Licence
 
 All rights reserved; see `LICENSE`.
+
+## Maintaining the manual
+
+Keep behavior aligned with the application and engine specifications and verify
+version-specific commands in the application source or installed help. Mark
+planned behavior explicitly. Articles use typed blocks in `src/content/wiki.ts`;
+section navigation is generated from headings. Cross-references are checked in
+unit tests. Screenshots live in `public/screenshots/`; its README records the
+source revision and synthetic-data capture details. Do not capture real books.

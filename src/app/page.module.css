@@ -1,4 +1,5 @@
 .hero {
+  animation: arrive 500ms ease-out both;
   padding-block: 96px 72px;
 }
 
@@ -94,6 +95,7 @@
 
 @media (max-width: 767px) {
   .hero {
+  animation: arrive 500ms ease-out both;
     padding-block: 47px 52px;
   }
 
@@ -132,3 +134,16 @@
     font-size: 18px;
   }
 }
+
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.showcase { padding-bottom: 72px; }
+.screens { display: grid; gap: 32px; margin-top: 24px; }
+.screens figure { min-width: 0; }
+.screens a { display: block; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.screens img { width: 100%; height: auto; transition: transform 180ms ease-out; }
+.screens a:hover img { transform: scale(1.008); }
+.screens figcaption { margin-top: 14px; color: var(--ink-muted); font-size: 15px; max-width: 75ch; }
+@media (min-width: 1200px) { .screens { grid-template-columns: 1.5fr 1fr; align-items: start; } }
