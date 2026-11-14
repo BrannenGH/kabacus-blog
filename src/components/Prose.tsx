@@ -38,7 +38,7 @@ export function Prose({ blocks }: { blocks: readonly Block[] }) {
           case "image":
             return <figure key={index}>
               {/* eslint-disable-next-line @next/next/no-img-element -- self-hosted documentation screenshot */}
-              <a href={block.src}><img src={block.src} alt={block.alt} width={1440} height={1000} loading="lazy" /></a>
+              <a href={block.src}><img className={block.height > block.width ? styles.portrait : undefined} src={block.src} alt={block.alt} width={block.width} height={block.height} loading="lazy" /></a>
               <figcaption>{block.caption}</figcaption>
             </figure>;
           case "code":

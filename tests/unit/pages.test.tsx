@@ -66,6 +66,16 @@ describe("wiki", () => {
   });
 });
 
+describe("manual screenshots", () => {
+  it("shows a phone screenshot at its own proportions", async () => {
+    render(await ArticlePage({ params: Promise.resolve({ slug: "phone" }) }));
+    const image = screen.getByRole("img", { name: /Kabacus Overview on a phone/ });
+    expect(image).toHaveAttribute("src", "/screenshots/phone-overview.webp");
+    expect(image).toHaveAttribute("width", "780");
+    expect(image).toHaveAttribute("height", "1688");
+  });
+});
+
 describe("manual navigation", () => {
   it("links headings from an article contents list", async () => {
     render(await ArticlePage({params: Promise.resolve({slug: "getting-started"})}));

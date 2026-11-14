@@ -46,8 +46,8 @@ export const features: ReadonlyArray<{ title: string; body: string; article: str
     article: "books",
   },
   {
-    title: "Bring your hledger journals",
-    body: "Import a journal once, export one any time. Accounting follows hledger’s.",
+    title: "Speaks hledger",
+    body: "Accounting follows hledger’s, and the books export as an hledger journal any time.",
     article: "import-export",
   },
   {
@@ -77,6 +77,6 @@ export const principles = {
 };
 
 export const screenshots = [
-  { src: "/screenshots/overview.webp", alt: "Kabacus Overview showing Cash on Hand, free money, reserves and credit", caption: "See what is free to spend. Overview separates available money from reserves and card payments.", article: "cash-on-hand" },
-  { src: "/screenshots/preview.webp", alt: "Kabacus transaction form with a balanced preview before saving", caption: "Review before saving. The application checks a transaction against the current revision of your books.", article: "transactions" },
+  { src: "/screenshots/overview.webp", alt: "Kabacus Overview showing Available to spend, free money, reserves and credit", caption: "See what is free to spend. Overview separates available money from reserves and card payments.", article: "cash-on-hand", width: 1440, height: 1000 },
+  { src: "/screenshots/preview.webp", alt: "Kabacus transaction form with a balanced preview before saving", caption: "Review before saving. The application checks a transaction against the current revision of your books.", article: "transactions", width: 1440, height: 1000 },
 ] as const;

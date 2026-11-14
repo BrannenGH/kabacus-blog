@@ -114,7 +114,8 @@ All rights reserved; see `LICENSE`.
 
 ## Maintaining the manual
 
-Keep behavior aligned with the application and engine specifications and verify
+The manual is the Kabacus specification: the app follows it, and a change to
+Kabacus's behaviour updates it in the same piece of work. Verify
 version-specific commands in the application source or installed help. Mark
 planned behavior explicitly. Articles use typed blocks in `src/content/wiki.ts`;
 section navigation is generated from headings. Cross-references are checked in

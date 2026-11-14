@@ -58,6 +58,7 @@
 .prose th, .prose td { border-bottom: 1px solid var(--rule); padding: 12px; vertical-align: top; min-width: 130px; }
 .prose th { background: var(--linen); }
 .prose img { width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 6px; }
+.prose img.portrait { max-width: 390px; }
 .prose figcaption { color: var(--ink-muted); font-size: 14px; margin-top: 10px; }
 
 @media (max-width: 767px) {
