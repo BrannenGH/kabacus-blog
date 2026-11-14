@@ -6,7 +6,7 @@ export type Block =
   | { type: "code"; text: string }
   | { type: "table"; columns: readonly string[]; rows: readonly (readonly string[])[] }
   | { type: "links"; slugs: readonly string[] }
-  | { type: "image"; src: string; alt: string; caption: string };
+  | { type: "image"; src: string; alt: string; caption: string; width: number; height: number };
 
 export interface Article {
   slug: string;
@@ -70,11 +70,11 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "The specification describes the intended contract. This manual explains that contract in task-oriented language and calls out known gaps. It was checked against the application and engine specifications and the application source on November 8, 2026. Installed versions can differ; use your version’s command help before running examples. Screenshots show the real web interface with synthetic sample books, not a live household."
+      "text": "The specification describes the intended contract. This manual explains that contract in task-oriented language and calls out known gaps. It was checked against the application source and kabacus-cli --help on November 14, 2026. Installed versions can differ; use your version’s command help before running examples. Screenshots show the real web interface with synthetic sample books, not a live household."
     },
     {
       "type": "p",
-      "text": "The shared libraries provide accounting, validation, reports and revisions for every interface. A different appearance does not imply different accounting. The website’s charcoal and red theme is separate from the application: the web app uses Verdure and the KDE app follows your system theme."
+      "text": "The shared libraries provide accounting, validation, reports and revisions for every interface. A different appearance does not imply different accounting. The red abacus icon is the same on this website and in every app. The website’s charcoal theme is its own: the web app uses neutral light and dark surfaces with green accents, and the KDE app follows your system theme."
     },
     {
       "type": "h2",
@@ -86,7 +86,8 @@ export const articles: readonly Article[] = [
         "Dedicated mortgage and installment-loan pages, editing split transactions in the app, and selecting several ledgers within one database are listed as unfinished in the application specification.",
         "Delete, rename and balance-assertion rewrites are not general-purpose app workflows yet. Use the documented command or MCP operation only when its rewrite gates are enabled.",
         "The engine specification describes internal-user administration. The current server documentation centers on an external OIDC provider or explicit single-user authentication-off mode; do not assume an administration or registration portal exists.",
-        "The engine specification favors .kabacus file exchange over journal-text export. The current CLI still implements export to a journal. Treat that as a version-specific interchange feature; a journal export does not preserve the complete audit history.",
+        "Journal import has been retired from kabacus-cli and kabacus-server. New books start in Kabacus; record opening balances instead of importing a journal.",
+        "The engine specification favors .kabacus file exchange over journal-text export. The current CLI still exports a journal. Treat that as a version-specific interchange feature; a journal export does not preserve the complete audit history.",
         "Server-composed warnings and refusals may remain untranslated. Tablet layouts use an icon rail and have less test coverage than desktop and phone layouts."
       ]
     },
@@ -233,6 +234,10 @@ export const articles: readonly Article[] = [
           "The unit of an amount: USD, EUR or another symbol. Symbols are case-sensitive."
         ],
         [
+          "Cash on Hand / Available to spend",
+          "What you can spend now. Overview labels it Available to spend."
+        ],
+        [
           "Free money",
           "A money account’s own balance, excluding the reserves below it."
         ],
@@ -369,7 +374,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "An amount stores a commodity symbol, an arbitrary-size integer mantissa and up to 255 decimal places. Display style is separate from value. For example, 12.50 is mantissa 1250 with two places. An ordinary write with more places than the commodity accepts is refused; import can increase the commodity’s places and reports that change. No write silently rounds away excess precision."
+      "text": "An amount stores a commodity symbol, an arbitrary-size integer mantissa and up to 255 decimal places. Display style is separate from value. For example, 12.50 is mantissa 1250 with two places. A write with more places than the commodity accepts is refused. No write silently rounds away excess precision."
     },
     {
       "type": "p",
@@ -445,101 +450,7 @@ export const articles: readonly Article[] = [
       "slugs": [
         "transactions",
         "reconcile",
-        "import-compatibility"
-      ]
-    }
-  ]
-},
-{
-  "slug": "import-compatibility",
-  "title": "Journal import compatibility",
-  "summary": "What survives an hledger import, what is reported and what stops it.",
-  "group": "Reference",
-  "blocks": [
-    {
-      "type": "h2",
-      "text": "Before migration"
-    },
-    {
-      "type": "p",
-      "text": "Keep your source journal and its included files. Import into empty books, preview the report, and compare balances and important assertions before saving. Import is a one-time migration: after it succeeds the database is authoritative and the journal files are no longer watched."
-    },
-    {
-      "type": "table",
-      "columns": [
-        "Journal feature",
-        "Kabacus treatment"
-      ],
-      "rows": [
-        [
-          "Transactions, exact amounts, costs and declarations",
-          "Read into structured rows; included journals are resolved relative to their including file."
-        ],
-        [
-          "Transaction and posting comments",
-          "Kept; original spacing and standalone comments do not round-trip."
-        ],
-        [
-          "Too many places for a commodity",
-          "Import raises its precision and reports the change; writes refuse excess precision."
-        ],
-        [
-          "Secondary date",
-          "Moved to the transaction comment as date2:YYYY-MM-DD; ordinary writes refuse a second date."
-        ],
-        [
-          "Automated postings, periodic transactions and P price lines",
-          "Ignored and reported; they do not create forecasts or automated entries."
-        ],
-        [
-          "Full-line comments, comment blocks, payee and tag directives",
-          "Ignored and reported, rather than kept as standalone text."
-        ],
-        [
-          "Tags inside transaction or posting comments",
-          "Remain comment text; they do not alter posting dates or account kinds."
-        ],
-        [
-          "alias, apply account, decimal-mark, D and Y / year directives",
-          "Stop import because ignoring them would change how later lines are interpreted."
-        ],
-        [
-          "Dates without a year or invalid dates",
-          "Refused; use explicit valid calendar dates."
-        ],
-        [
-          "Missing includes, include cycles or unreadable syntax",
-          "Stop with an error identifying the source location."
-        ]
-      ]
-    },
-    {
-      "type": "h2",
-      "text": "Assertions and differences from hledger"
-    },
-    {
-      "type": "p",
-      "text": "Kabacus uses end-of-day assertions and exact balancing. Its total assertion forms check every commodity, including those held only in subaccounts for ==*. The engine specification calls for reporting assertions that do not hold at end of day during import. Review every import diagnostic rather than assuming an hledger-successful journal has identical semantics."
-    },
-    {
-      "type": "h2",
-      "text": "Verify the result"
-    },
-    {
-      "type": "ol",
-      "items": [
-        "Review every ignored feature and precision change in the import report.",
-        "Compare balances per commodity and account, including money accounts with their subaccounts.",
-        "Check card reserves, receivables and any account-kind warnings. Imported names may not match your configured rules.",
-        "Keep the original journal and a verified .kabacus copy. The exported journal does not carry all revision history."
-      ]
-    },
-    {
-      "type": "links",
-      "slugs": [
-        "import-export",
-        "ledger-rules",
-        "backup-and-recovery"
+        "import-export"
       ]
     }
   ]
@@ -575,7 +486,7 @@ export const articles: readonly Article[] = [
         ],
         [
           "Too many decimal places",
-          "Enter an amount valid for the commodity. Import is the only automatic precision-increase path."
+          "Enter an amount valid for the commodity. Kabacus never rounds it for you."
         ],
         [
           "Undeclared account or commodity",
@@ -605,6 +516,10 @@ export const articles: readonly Article[] = [
         [
           "negative-fund",
           "A reserve is overdrawn. Check its spending and source account before setting aside more."
+        ],
+        [
+          "negative-reserve",
+          "A card’s reserve is below zero, or the card is in credit, usually because a payment was recorded without the purchases it paid. The shortfall counts against free money. Fix opens the card; record the missing purchases."
         ],
         [
           "negative-free-money",
@@ -654,7 +569,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Record the application version, interface, operation, error sentence and relevant revision. Expand Details for technical context. Reproduce with synthetic books where possible and remove financial data, credentials and personal information before sharing logs or sample files."
+      "text": "Record the application version (Settings → About shows the app’s own version, not the server’s), interface, operation, error sentence and relevant revision. Expand Details for technical context. Reproduce with synthetic books where possible and remove financial data, credentials and personal information before sharing logs or sample files."
     },
     {
       "type": "links",
@@ -683,7 +598,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "The installed help is authoritative for flags in your release. The CLI source currently provides info, new, report, import, export, history, run, commands, mcp, completions and man. Reads support --json. Help exits 0, usage errors exit 2, and operation failures exit 1."
+      "text": "The installed help is authoritative for flags in your release. The current CLI provides info, new, report, export, history, run, commands, mcp, completions and man. Reads support --json. Help exits 0, usage errors exit 2, and operation failures exit 1."
     },
     {
       "type": "h2",
@@ -691,19 +606,27 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "code",
-      "text": "kabacus-cli info household.kabacus --json\nkabacus-cli report household.kabacus cash-on-hand\nkabacus-cli report household.kabacus register --account assets:bank:checking\nkabacus-cli history household.kabacus\nkabacus-cli history household.kabacus --diff 42"
+      "text": "kabacus-cli info household.kabacus --json\nkabacus-cli report household.kabacus cash-on-hand\nkabacus-cli report household.kabacus register --account assets:bank:checking\nkabacus-cli report household.kabacus income-statement --period 2026-10-01..2026-10-31 --csv\nkabacus-cli history household.kabacus\nkabacus-cli history household.kabacus --diff 42"
     },
     {
       "type": "h2",
-      "text": "Create and migrate"
-    },
-    {
-      "type": "code",
-      "text": "kabacus-cli new household.kabacus --name Household --currency USD\nkabacus-cli import household.kabacus main.journal\nkabacus-cli import household.kabacus main.journal --save"
+      "text": "Reports"
     },
     {
       "type": "p",
-      "text": "Import previews by default. Inspect its report before using --save, and import only into empty books. The CLI’s current export writes a journal; it is not a database backup with complete history."
+      "text": "report takes cash-on-hand, register (with --account), balance-sheet, income-statement, cash-flow, categories, cash-on-hand-history or receivables. --period FROM..TO limits the dates and --csv prints a table instead of JSON."
+    },
+    {
+      "type": "h2",
+      "text": "Create and export"
+    },
+    {
+      "type": "code",
+      "text": "kabacus-cli new household.kabacus --name Household --currency USD --account assets:bank:checking\nkabacus-cli export household.kabacus -o household.journal"
+    },
+    {
+      "type": "p",
+      "text": "new makes books with one money account and a currency; the defaults are assets:bank:checking and USD. export writes the books as journal text; it is not a database backup with complete history. There is no journal import."
     },
     {
       "type": "h2",
@@ -727,7 +650,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "The port here is an example; it must match the app’s enabled Automation channel. Do not combine --attach and --books. A browser tab has no attached control channel. Headless MCP opens only the files explicitly supplied; --books can repeat. Rewrite operations require explicit --allow-rewrites in headless mode."
+      "text": "The port here is an example; it must match the app’s enabled Automation channel. Do not combine --attach and --books. A browser tab has no attached control channel. Headless MCP opens only the files explicitly supplied; --books can repeat. Rewrite operations require explicit --allow-rewrites in headless mode; it is a global flag, so it also lets run scripts declare or rename accounts."
     },
     {
       "type": "links",
@@ -767,7 +690,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "For shared or remote books, configure an OIDC issuer and role mapping. Local authentication-off mode is explicit and restricted to a unix socket or loopback; never use it as a fallback when OAuth fails. ledger-read, ledger-write and ledger-rewrite distinguish visibility, normal bookkeeping and gated rewrites. Configure the claim and role_map for the provider’s actual token shape."
+      "text": "For shared or remote books, configure an OIDC issuer and role mapping. Local authentication-off mode is explicit and restricted to a unix socket or loopback; never use it as a fallback when OAuth fails. ledger-read, ledger-write and ledger-rewrite distinguish visibility, normal bookkeeping and gated rewrites. Configure the claim and role_map for the provider’s actual token shape. The host allows rewrites by default; start the server with --no-rewrite to refuse them for everyone, whatever their roles."
     },
     {
       "type": "p",
@@ -817,13 +740,13 @@ export const articles: readonly Article[] = [
       ol(
         "Install the app (see Download) and start it. With no books open it shows Welcome.",
         "Choose New Books…, pick where to save the .kabacus file, then give it a currency and a first account.",
-        "Press Add (Ctrl+N) and choose what happened: spent, received, card purchase, transfer and so on.",
+        "Press Add (Ctrl+N) and choose what happened: spent, received, transfer, set aside and so on. Spending on a card is Spent with the card as From.",
         "Fill in the amount. The preview shows the balances before and after and whether the books balance. Save when it looks right.",
       ),
-      h2("Already use hledger?"),
-      p("Import your journal once with kabacus-cli. After that the database is the books and the journal files are no longer read. See Import and export."),
+      h2("Coming from hledger?"),
+      p("Journal import has been retired. Start new books, record each account’s opening balance with Postings against equity:opening, and reconcile against your statements. kabacus-cli export can still write your books as an hledger journal. See Export to hledger."),
       h2("Where things are"),
-      p("The sidebar lists the destinations in a fixed order: Overview, Transactions, Reserves, Credit, Loans, People, Reports and Activity. Settings is at the foot. The foot of the sidebar also says where your books live and that every change is saved."),
+      p("The sidebar lists the destinations in a fixed order: Overview, Transactions, Reserves, Credit, Loans, People, Reports and Activity. Settings is at the foot. The foot of the sidebar also says where your books live and that every change is saved. Overview opens with Available to spend: your Cash on Hand."),
 {
       "type": "h2",
       "text": "Check before relying on the books"
@@ -832,7 +755,7 @@ export const articles: readonly Article[] = [
       "type": "ol",
       "items": [
             "Use account paths that match the account-kind rules, such as assets:bank:checking. Check Overview for unclassified accounts.",
-            "Record or import opening balances and compare them with the real accounts. Do not enter an existing balance again as new income.",
+            "Record opening balances and compare them with the real accounts. Do not enter an existing balance again as new income.",
             "Inspect the first saved transaction in Transactions and its revision in Activity.",
             "Save a separate copy and verify that it opens before making the file your only record."
       ]
@@ -863,7 +786,7 @@ export const articles: readonly Article[] = [
       h2("One set of books per window"),
       p("Open Recent opens books in the current window; the arrow beside an entry opens them in a new one. Books already open in another window bring that window forward. When you start again, every window from last time reopens where you left it, or you can choose to see Welcome instead in Settings → When Kabacus Starts."),
       h2("Money is exact"),
-      p("Amounts are whole numbers with a number of decimal places, never floating point. A write with more decimal places than its commodity takes is refused; only an import can raise a commodity’s places."),
+      p("Amounts are whole numbers with a number of decimal places, never floating point. A write with more decimal places than its commodity takes is refused, never rounded."),
       h2("Descriptions and numbers"),
       p("A description can’t contain a line break or a semicolon, so it can’t pose as postings or tags in the journal text. Every transaction gets a number when it is first written; it never changes, even when you edit the transaction."),
     ],
@@ -915,11 +838,25 @@ export const articles: readonly Article[] = [
     summary: "The Add chooser, previews, editing in place, voiding and conflicts.",
     blocks: [
       h2("Add"),
-      p("Add is one chooser, named after what happened: spent, received, card purchase, transfer, set aside, pay a card, split with someone, or postings for full control. Keys 1–8 choose. A payee you have used before pre-fills the form from its last transaction, and account pickers offer likely accounts first."),
+      p("Add is one chooser, named after what happened: spent, received, transfer, set aside, pay a card, split with someone, settle up with someone, or postings for full control. Keys 1–8 choose. A payee you have used before pre-fills the form from its last transaction, and account pickers offer likely accounts first."),
+      ul(
+        "Card purchase: choose a card as From in Spent and the form becomes a card purchase, which adds the card’s reserve lines for you. Switch to Spent goes back. Record purchase on Credit opens the same form.",
+        "New category: type a category that doesn’t exist yet in Spent. The form warns that it is new and creates it in the same revision when you save.",
+        "Account pickers open on the groups of the account tree, starting at the current account’s group, with a breadcrumb back up. Typing searches every group at once and shows which group each match lives in.",
+      ),
+{
+      "type": "image",
+      "src": "/screenshots/add-chooser.webp",
+      "alt": "Kabacus Add chooser listing eight kinds of transaction with keys 1 to 8",
+      "caption": "The Add chooser in the web app. Each choice says what it records; press its number to choose it.",
+      "width": 1440,
+      "height": 1000
+},
       h2("Preview, then save"),
-      p("Every write previews first with a dry run: balances before and after, the change in Cash on Hand, the transaction’s text and whether the books balance. Saving writes it as one new numbered revision (“Saved as revision 418”, with View)."),
+      p("Every write previews first with a dry run: balances before and after, the change in Cash on Hand, the transaction’s text and whether the books balance. Saving writes it as one new numbered revision and closes the form; the revision appears in Activity."),
       h2("Edit in place"),
       p("Click a transaction to edit it. Saving replaces it, keeps its number and keeps its comments, tags and assertions. Leaving out a posting that carries a balance assertion is an error, not a silent removal. Saving without a change writes nothing."),
+      p("A card purchase opens in the card purchase form, with its Card, Category and Paid from fields; saving moves its reserve lines with it. View as raw postings shows any edit as plain postings: a button in the form’s header on a wide screen, an item in the overflow menu on a phone."),
       h2("Void"),
       p("A void adds a reversal dated today and leaves the original untouched. Both show in registers and net to zero. There is no revert: history only grows."),
       h2("Conflicts"),
@@ -934,7 +871,9 @@ export const articles: readonly Article[] = [
       "type": "image",
       "src": "/screenshots/preview.webp",
       "alt": "Kabacus Spent form beside a balanced transaction preview",
-      "caption": "Sample transaction in the web app. Review the date, accounts, amount and revision before saving."
+      "caption": "A $64.12 grocery purchase from Checking. The preview shows the journal text, the revision it was checked against, and how Cash on Hand and each account change.",
+      "width": 1440,
+      "height": 1000
 },
 {
       "type": "h2",
@@ -960,8 +899,8 @@ export const articles: readonly Article[] = [
             ],
             [
                   "Credit-card purchase or refund",
-                  "Card purchase",
-                  "The card and source reserve/free money; keep reserve lines together."
+                  "Spent, with the card as From",
+                  "The card and source reserve/free money; the form keeps reserve lines together."
             ],
             [
                   "Money moved between banks",
@@ -984,6 +923,11 @@ export const articles: readonly Article[] = [
                   "The person’s receivable/payable and your own share."
             ],
             [
+                  "You paid someone back, or they paid you",
+                  "Settle up with someone",
+                  "Which way the money went and the bank account it left or reached."
+            ],
+            [
                   "Need explicit accounting entries",
                   "Postings",
                   "All declared accounts, exact amounts and balanced entries."
@@ -996,7 +940,7 @@ export const articles: readonly Article[] = [
 },
 {
       "type": "p",
-      "text": "For a card refund use a negative card-purchase amount and return the money to its original source. Before adding a suspected missing transaction, search the payee and inspect the register; importing or recording the same payment twice changes the books twice."
+      "text": "For a card refund use a negative card-purchase amount and return the money to its original source. Before adding a suspected missing transaction, search the payee and inspect the register; recording the same payment twice changes the books twice."
 },
 {
       "type": "links",
@@ -1015,12 +959,12 @@ export const articles: readonly Article[] = [
     blocks: [
       p("Cash on Hand is the free money left once reserves, card reserves and money owed to you are set apart. It is shown for today unless you ask for another day; a transaction dated in the future counts from its own day."),
       code("Cash on Hand = Money on Hand − Future Allocations − Receivables"),
-      p("An overdrawn reserve sets nothing apart: its overdraft was spent from the account’s free money, so it comes off that free money."),
+      p("An overdrawn reserve sets nothing apart: its overdraft was spent from the account’s free money, so it comes off that free money. A card reserve below zero works the same way. That usually happens when a card payment is recorded without the purchases it paid, or the card is paid more than it owes; the shortfall comes off the bank account’s free money and the negative-reserve warning names the card."),
       h2("Where you see it"),
       ul(
-        "Overview shows it first, beside the free money in each account, with a trend and its change against a month ago.",
-        "Money on Hand has an info button and opens into the sum Cash on Hand comes from.",
-        "Reports include Cash on Hand over time and a cash flow bridge from one day’s Cash on Hand to another’s.",
+        "Overview shows it first as Available to spend, with its change since a month ago (sign and comparison date). How it’s worked out opens the sum it comes from.",
+        "Available by account lists the free money in each bank account. Reserves and Credit follow; a card’s reserve is labelled Set Aside for Credit Card Payments.",
+        "Overview charts Cash on Hand over time, and the Cash flow report bridges one month’s opening Cash on Hand to its closing.",
         "Every preview shows how a change moves it.",
       ),
 {
@@ -1030,8 +974,10 @@ export const articles: readonly Article[] = [
 {
       "type": "image",
       "src": "/screenshots/overview.webp",
-      "alt": "Kabacus Overview with sample balances and Cash on Hand calculation",
-      "caption": "Sample books in the web app. Money on Hand includes the receivable; reserves include $1,800 for travel and $500 for a card."
+      "alt": "Kabacus Overview with Available to spend, free money by account, reserves and a credit card",
+      "caption": "Sample books in the web app: $18,288.84 available to spend, two reserves, and an Everyday Visa whose reserve matches what it owes.",
+      "width": 1440,
+      "height": 1000
 },
 {
       "type": "h2",
@@ -1039,11 +985,11 @@ export const articles: readonly Article[] = [
 },
 {
       "type": "code",
-      "text": "Money on Hand        $6,200.75\nFuture Allocations  −$2,300.00\nReceivables           −$120.00\nCash on Hand         $3,780.75"
+      "text": "Money on Hand        $20,067.67\nFuture Allocations   −$1,736.75\nReceivables             −$42.08\nCash on Hand         $18,288.84"
 },
 {
       "type": "p",
-      "text": "The bank account itself holds $6,080.75 in this example: $3,780.75 free, $1,800 in Travel and $500 reserved for the card. The additional $120 is owed to you and cannot be spent yet. Card debt is already covered by its reserve and is not subtracted twice."
+      "text": "In the sample books Checking holds $11,325.59 at the bank: $9,588.84 free, $60 in Car insurance, $1,500 in Winter trip and $176.75 set aside for the Everyday Visa. Savings holds $8,700, all of it free. Future Allocations are the two reserves and the card reserve. The $42.08 a friend owes for shared groceries is counted in Money on Hand but can’t be spent yet. Card debt is already covered by its reserve and is not subtracted twice."
 },
 {
       "type": "links",
@@ -1066,7 +1012,17 @@ export const articles: readonly Article[] = [
         "Release money back to free money, or move it between reserves of the same bank account. Money never moves across banks.",
         "Only what is there can be set aside: the source’s lowest balance from that day on must cover the amount.",
         "If you ask for too much the preview names the shortfall under Amount and nothing can be saved.",
+        "Set money aside shows the current balance under From and under To as you pick them, so you can see what is there before you preview.",
+        "The Reserves page lists each reserve with the name of the bank account that holds it.",
       ),
+{
+      "type": "image",
+      "src": "/screenshots/set-aside.webp",
+      "alt": "Kabacus Set money aside form moving $250 from Checking into the Winter trip reserve, with its preview",
+      "caption": "Setting $250 aside for a trip. Checking’s free money and the reserve’s balance show under each field; the preview shows Cash on Hand falling by $250 while the bank balance stays the same.",
+      "width": 1440,
+      "height": 1000
+},
       p("Moving money between different bank accounts is a real transfer. Record it only after it happened at the bank."),
 {
       "type": "h2",
@@ -1102,10 +1058,18 @@ export const articles: readonly Article[] = [
       p("Each card has a reserve inside the bank account that will pay it. The reserve always equals what the card owes."),
       ul(
         "A card purchase moves money from free money (or the reserve paying for it) into the card’s reserve.",
-        "Paying the card spends the reserve. Paying more than it owes puts the card into credit and its reserve follows below zero.",
+        "Paying the card spends the reserve. Paying more than it owes puts the card into credit and its reserve follows below zero. A reserve below zero counts as zero, so the overpayment comes off free money and lowers Cash on Hand; Overview warns until it is fixed.",
         "A card transaction written without its reserve lines is saved but flagged as unreserved until fixed.",
       ),
-      p("The Credit page lists each card with what it owes, its reserve and what is still to reserve, with one-revision fixes for missing reserve lines."),
+      p("The Credit page lists each card with what it owes, its reserve and what is still to reserve. Record purchase is its main action, with Pay card beside it. Add all reserve lines appears only when a card has unreserved lines, and fixes them in one revision."),
+{
+      "type": "image",
+      "src": "/screenshots/credit.webp",
+      "alt": "Kabacus Credit page showing the Everyday Visa owing $176.75 with a matching reserve",
+      "caption": "The Credit page. The Everyday Visa owes $176.75, its reserve holds the same, and nothing is left to reserve.",
+      "width": 1440,
+      "height": 640
+},
 {
       "type": "h2",
       "text": "Record a purchase and payment"
@@ -1113,11 +1077,20 @@ export const articles: readonly Article[] = [
 {
       "type": "ol",
       "items": [
-            "Use Card purchase with the card, expense account, amount and source: free money or the reserve paying for it.",
+            "Choose Record purchase on Credit, or Spent with the card as From. Give the category, the amount and what pays for it: free money or a reserve.",
             "Check the preview includes both the card debt and the matching reserve movement.",
+            "To change a recorded purchase, open it: it edits in the same form and its reserve lines move with it.",
             "On Credit, compare owes, reserve and still to reserve.",
             "After the bank payment happens, use Pay a card. It consumes the reserve without reducing Cash on Hand again."
       ]
+},
+{
+      "type": "image",
+      "src": "/screenshots/card-purchase.webp",
+      "alt": "Kabacus card purchase form for a $42.60 dinner on the Everyday Visa, with its preview",
+      "caption": "A card purchase started from Spent. The preview shows four lines: the expense, the card’s debt, and $42.60 moving from Checking’s free money into the card’s reserve.",
+      "width": 1440,
+      "height": 1000
 },
 {
       "type": "h2",
@@ -1157,6 +1130,7 @@ export const articles: readonly Article[] = [
       p("Each person has a receivable (they owe you, never below zero) and a payable (you owe them, never above zero). Money toward someone pays down what you owe them first, then builds what they owe you."),
       ul(
         "Use “split with someone” in Add to record a shared expense.",
+        "Use “settle up with someone” when money changes hands: choose whether you paid them or they paid you, and the bank account it left or reached. It nets against what is owed, paying down one side before building the other.",
         "Each person has a netted statement that runs from the start of last year.",
         "Export a statement as CSV or PDF; the app and MCP clients produce identical files.",
         "Receivables activity is also a report.",
@@ -1177,7 +1151,7 @@ export const articles: readonly Article[] = [
       "type": "ol",
       "items": [
             "Open People and inspect what the person owes or is owed. Zero-balance people can be absent from summary lists.",
-            "Record the actual repayment with the correct accounts and date.",
+            "Record the actual repayment with Settle up with someone, on the date it happened.",
             "Open the statement and check its running balance and remaining open items.",
             "Export CSV or PDF when a shareable statement is needed."
       ]
@@ -1197,15 +1171,16 @@ export const articles: readonly Article[] = [
     title: "Reports",
     summary: "The reports and what they count.",
     blocks: [
+      p("The Reports page in both apps offers three reports for a month: Cash flow, Income statement and Categories. Overview charts Cash on Hand over time and People has each person’s statement. kabacus-cli report and MCP clients reach every report:"),
       ul(
         "Income statement, with loan principal shown as equity conversion.",
-        "Balance sheet.",
+        "Balance sheet (command line and MCP).",
         "Spending by category.",
-        "Cash on Hand over time, and a cash flow bridge between two days.",
-        "Receivables activity.",
+        "Cash on Hand over time, and a cash flow bridge from one day’s Cash on Hand to another’s.",
+        "Receivables activity (command line and MCP).",
       ),
       p("Every report counts every transaction, voided ones and their reversals included, as hledger’s balance reports do. Income and equity, which hledger keeps negative, are shown positive and neutral. Amounts are coloured by sign."),
-      p("kabacus-cli report prints the same reports, and MCP clients can ask for them."),
+      p("kabacus-cli report prints them as JSON or, with --csv, a table."),
 {
       "type": "h2",
       "text": "Choose the report for the question"
@@ -1223,7 +1198,7 @@ export const articles: readonly Article[] = [
             ],
             [
                   "What do I own and owe?",
-                  "Balance sheet."
+                  "Balance sheet, from kabacus-cli report or MCP."
             ],
             [
                   "Where did spending go?",
@@ -1298,11 +1273,19 @@ export const articles: readonly Article[] = [
     blocks: [
       p("Every write is one numbered revision (1, 2, 3, …). There are no commits or hashes. Each records who made it: the app, kabacus-cli, an MCP client or the signed-in user, with an agent’s name when an assistant made it, and a one-line summary naming the transaction."),
       ul(
-        "The Activity page lists every revision and opens the transaction it wrote.",
+        "The Activity page lists every revision, newest first, with who made it and when in your local time, and opens the transaction it wrote. Filter it to this app, kabacus-cli, MCP or external edits.",
         "Any revision shows as a diff of the books’ text.",
         "The books can be read as they were at any revision.",
         "Rewrites (delete, rewrite outright, declare, rename or remove an account, change a balance assertion) are hidden behind three gates: the host allows them, you hold the ledger-rewrite role, and the app has them switched on. Even then history keeps the earlier versions.",
       ),
+{
+      "type": "image",
+      "src": "/screenshots/activity.webp",
+      "alt": "Kabacus Activity page listing numbered revisions with their summaries",
+      "caption": "Activity in the sample books. Each revision has a number, a one-line summary naming the transaction, who made it and when.",
+      "width": 1440,
+      "height": 1000
+},
 {
       "type": "h2",
       "text": "Revisions are not transaction numbers"
@@ -1323,13 +1306,13 @@ export const articles: readonly Article[] = [
   {
     slug: "import-export",
     group: "Beyond the window",
-    title: "Import and export",
-    summary: "Bring hledger journals in and take the books out.",
+    title: "Export to hledger",
+    summary: "Take the books out as an hledger journal, and start books without importing one.",
     blocks: [
-      p("Kabacus’s accounting follows hledger’s. Make empty books, then import a journal (and what it includes) into them, once. Import previews unless you pass --save, and it refuses books that aren’t empty:"),
-      code("kabacus-cli new household.kabacus --currency USD\nkabacus-cli import household.kabacus main.journal\nkabacus-cli import household.kabacus main.journal --save"),
-      p("On a server the same is kabacus-server import <journal>. Afterwards the database is the books and the journal files are no longer read. Export writes an hledger journal any time:"),
+      p("Kabacus’s accounting follows hledger’s. Export writes the books as an hledger journal any time:"),
       code("kabacus-cli export household.kabacus -o household.journal"),
+      h2("Starting without an import"),
+      p("Journal import has been retired from kabacus-cli and kabacus-server. To move to Kabacus, make new books, record each account’s opening balance with Postings against equity:opening on the day you start, and reconcile each account against its statement. Keep your old journal as the record of earlier years."),
 {
       "type": "h2",
       "text": "What export preserves"
@@ -1341,7 +1324,8 @@ export const articles: readonly Article[] = [
 {
       "type": "links",
       "slugs": [
-            "import-compatibility",
+            "getting-started",
+            "reconcile",
             "backup-and-recovery"
       ]
 }
@@ -1353,12 +1337,13 @@ export const articles: readonly Article[] = [
     title: "The web app and PWA",
     summary: "The same app in a browser or as a desktop shell, and how it differs.",
     blocks: [
-      p("The web app has the KDE app’s destinations, words, order and flows, so someone who uses one can use the other. It looks different: it uses the Verdure design language of parchment, forest, sage and gold."),
+      p("The web app has the KDE app’s destinations, words, order and flows, so someone who uses one can use the other. A change to one ships in the other at the same time. It looks different: neutral light and dark surfaces with green accents, where the KDE app follows your system theme. Both use the same red abacus icon."),
       ul(
         "A desktop shell (Tauri) opens files and windows like the KDE app, with the same File menu.",
         "An installable PWA works offline and, once installed, can open .kabacus files from the file manager where the browser supports it.",
         "Books in a browser run the same libraries compiled to WebAssembly. Chromium saves back to the file you picked and asks once per file after a restart; other browsers keep the books in browser storage, and Save a Copy As… downloads them.",
         "One set of books per tab.",
+        "Settings → About shows the version of the app you are running (the PWA or the desktop shell’s build), not the server’s.",
         "A server can host the web app at /app/; it then opens that server’s books after sign-in.",
       ),
 {
@@ -1392,12 +1377,21 @@ export const articles: readonly Article[] = [
       p("The KDE app and the web app have the same shape on a phone. Tablets keep the desktop layout with the sidebar as an icon rail."),
       ul(
         "Tabs at the bottom: Overview, Transactions, Reserves, Credit and More. More lists Loans, People, Reports, Activity, Settings and Books.",
-        "The app bar shows the books’ name, which opens the Books sheet to switch books or connect to a server.",
+        "The app bar shows the books’ name, which opens the Books sheet to switch books or connect to a server, with search and an overflow menu beside it.",
         "A floating Add button opens the Add sheet with the same eight choices.",
         "Recording is a full-screen form with Amount first and a numeric keypad. Review shows what changes, then Save.",
         "A register shows rows grouped by day. Search is in the app bar; Reconcile, Statement and Void are in the overflow menu.",
+        "While editing, View as raw postings is in the overflow menu.",
         "Touch targets are at least 48 px.",
       ),
+{
+      "type": "image",
+      "src": "/screenshots/phone-overview.webp",
+      "alt": "Kabacus Overview on a phone, with Available to spend, the tab bar and the floating Add button",
+      "caption": "The web app on a 390 px phone. The KDE app has the same tabs and Add button.",
+      "width": 780,
+      "height": 1688
+},
     ],
   },
   {
@@ -1423,7 +1417,7 @@ export const articles: readonly Article[] = [
     blocks: [
       p("kabacus-cli is the app without a window. It calls the same libraries, so a script or an assistant gets the same validation, revisions and conflicts as a person."),
       h2("Subcommands"),
-      p("info, new, report, import, export, history, run, commands and mcp. Reading subcommands take --json. --help prints to stdout and exits 0; usage errors exit 2 before any work; failures exit 1."),
+      p("info, new, report, export, history, run, commands, mcp, completions and man. Reading subcommands take --json. --help prints to stdout and exits 0; usage errors exit 2 before any work; failures exit 1."),
       h2("Scripts"),
       p("run executes a script, one step per command. A step can name itself with “as” and later steps use its result. A script is all-or-nothing and saved as one revision. Writes are dry runs unless you pass --save. kabacus-cli commands lists every action."),
       h2("MCP"),

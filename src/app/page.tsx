@@ -35,7 +35,7 @@ export default function HomePage() {
             <figure key={shot.src}>
               <Link href={`/wiki/${shot.article}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- self-hosted, pre-sized screenshots */}
-                <img src={shot.src} alt={shot.alt} width={1440} height={1000} />
+                <img src={shot.src} alt={shot.alt} width={shot.width} height={shot.height} />
               </Link>
               <figcaption>{shot.caption}</figcaption>
             </figure>
