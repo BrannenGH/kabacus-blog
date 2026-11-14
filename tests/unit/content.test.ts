@@ -21,6 +21,12 @@ describe("wiki content", () => {
     }
   });
 
+  it("is the specification, and cites no other", () => {
+    expect(JSON.stringify(findArticle("manual-scope"))).toContain("This manual is the Kabacus specification");
+    const text = JSON.stringify(articles).toLowerCase();
+    expect(text).not.toMatch(/(engine|application) specification/);
+  });
+
   it("never names an AI agent", () => {
     const text = JSON.stringify(articles).toLowerCase();
     expect(text).not.toContain("generated with");

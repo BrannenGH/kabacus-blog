@@ -66,11 +66,11 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "h2",
-      "text": "Specification and current behavior"
+      "text": "The specification"
     },
     {
       "type": "p",
-      "text": "The specification describes the intended contract. This manual explains that contract in task-oriented language and calls out known gaps. It was checked against the application source and kabacus-cli --help on November 14, 2026. Installed versions can differ; use your version’s command help before running examples. Screenshots show the real web interface with synthetic sample books, not a live household."
+      "text": "This manual is the Kabacus specification: it says what Kabacus does and why, and the apps, kabacus-cli and kabacus-server follow it. Where an app disagrees with the manual, that is a bug to report. Work that is planned but not done yet is marked as planned. It was checked against the application source and kabacus-cli --help on November 14, 2026. Installed versions can differ; use your version’s command help before running examples. Screenshots show the real web interface with synthetic sample books, not a live household."
     },
     {
       "type": "p",
@@ -78,16 +78,16 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "h2",
-      "text": "Known gaps and differences"
+      "text": "Planned and not done yet"
     },
     {
       "type": "ul",
       "items": [
-        "Dedicated mortgage and installment-loan pages, editing split transactions in the app, and selecting several ledgers within one database are listed as unfinished in the application specification.",
+        "Dedicated mortgage and installment-loan pages, editing split transactions in the app, and selecting several ledgers within one database are planned.",
         "Delete, rename and balance-assertion rewrites are not general-purpose app workflows yet. Use the documented command or MCP operation only when its rewrite gates are enabled.",
-        "The engine specification describes internal-user administration. The current server documentation centers on an external OIDC provider or explicit single-user authentication-off mode; do not assume an administration or registration portal exists.",
+        "There is no administration or registration portal. A server signs people in through an external OAuth 2.0 / OpenID Connect provider, or runs in explicit single-user authentication-off mode.",
         "Journal import has been retired from kabacus-cli and kabacus-server. New books start in Kabacus; record opening balances instead of importing a journal.",
-        "The engine specification favors .kabacus file exchange over journal-text export. The current CLI still exports a journal. Treat that as a version-specific interchange feature; a journal export does not preserve the complete audit history.",
+        "Exchanging books as .kabacus files is planned as the way to move books between installations. Today kabacus-cli exports a journal, which does not preserve the complete audit history.",
         "Server-composed warnings and refusals may remain untranslated. Tablet layouts use an icon rail and have less test coverage than desktop and phone layouts."
       ]
     },
@@ -1319,7 +1319,7 @@ export const articles: readonly Article[] = [
 },
 {
       "type": "p",
-      "text": "The current CLI exports rendered hledger journal text, not every historical revision or the original formatting. Keep a .kabacus copy for the database and history. The engine specification describes .kabacus ledger exchange as the intended format; consult the installed version’s help for available file-exchange operations."
+      "text": "The current CLI exports rendered hledger journal text, not every historical revision or the original formatting. Keep a .kabacus copy for the database and history. Exchanging books as .kabacus files is planned; check the installed version’s help for the file-exchange operations it has."
 },
 {
       "type": "links",

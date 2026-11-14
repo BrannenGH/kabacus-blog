@@ -14,10 +14,12 @@ Hard rules:
   and 72 px margins; below 768 px it is one column with 24 px gutters.
 - **Content lives in `src/content/`**, not inline in pages. Help articles are
   typed data in `src/content/wiki.ts`.
-- **Accurate to Kabacus.** The site describes what Kabacus does today. The public
-  help manual explains the specification for users; distinguish current behavior
-  from planned features. Do not link to the internal specification wiki. Check
-  commands and flags against `kabacus-cli --help`.
+- **The site is the Kabacus specification.** The help manual
+  (`src/content/wiki.ts`) says what Kabacus does and why, and the app
+  repository (`BrannenGH/kabacus`) follows it; where they disagree, the
+  manual decides. A change to Kabacus's behaviour updates the manual in the
+  same piece of work. Mark planned features as planned. Check commands and
+  flags against `kabacus-cli --help`.
 - **Self-host assets.** No third-party requests from the page: fonts come
   from the Fontsource packages via `next/font/local`.
 - **Accessible by default.** Semantic landmarks and headings, real links,
