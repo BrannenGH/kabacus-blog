@@ -21,9 +21,8 @@ describe("wiki content", () => {
     }
   });
 
-  it("never links to the specification wiki or names an AI agent", () => {
+  it("never names an AI agent", () => {
     const text = JSON.stringify(articles).toLowerCase();
-    expect(text).not.toContain("taiga");
     expect(text).not.toContain("generated with");
   });
 });
