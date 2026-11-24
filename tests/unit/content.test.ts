@@ -6,6 +6,13 @@ import { features, screenshots } from "@/content/home";
 import { articles, findArticle, groups } from "@/content/wiki";
 
 describe("wiki content", () => {
+  it("publishes the planned statement import chapter and its acceptance cases", () => {
+    const article = findArticle("transaction-import");
+    expect(article?.summary).toContain("Planned");
+    expect(article?.blocks.filter((block) => block.type === "ol").slice(-4)
+      .flatMap((block) => block.items)).toHaveLength(25);
+  });
+
   it("has unique slugs and a known group for every article", () => {
     const slugs = articles.map((article) => article.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
