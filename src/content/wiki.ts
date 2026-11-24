@@ -1384,7 +1384,7 @@ export const articles: readonly Article[] = [
         ],
         [
           "uncategorized",
-          "Transactions still post to expenses:uncategorized. The warning counts them even when their amounts cancel out. Open Categorize to review those transactions."
+          "Transactions still post to expenses:uncategorized. The warning counts them even when their amounts cancel out. Choose Fix on Transactions to open the Categorize register."
         ],
         [
           "duplicate-display-name",
@@ -1682,6 +1682,8 @@ export const articles: readonly Article[] = [
     title: "Recording and changing transactions",
     summary: "The Add chooser, previews, editing in place, voiding and conflicts.",
     blocks: [
+      h2("Find transactions"),
+      p("On Transactions, choose the All transactions card above the accounts to browse across your books. If the category warning appears, choose Fix to open only the transactions that still need a category. Open one to edit its category."),
       h2("Add"),
       p("Add is one chooser, named after what happened: spent, received, transfer, set aside, pay a card, split with someone, settle up with someone, or postings for full control. Keys 1–8 choose. A payee you have used before pre-fills the form from its last transaction, and account pickers offer likely accounts first."),
       ul(
