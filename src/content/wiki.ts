@@ -33,7 +33,7 @@ export const articles: readonly Article[] = [
   "blocks": [
     {
       "type": "p",
-      "text": "This chapter describes planned statement import. The feature will arrive in stages. The KDE and web flows are subject to design approval."
+      "text": "This chapter describes planned statement import. The feature will arrive in stages. Check your installed version for availability."
     },
     {
       "type": "h2",
@@ -1384,7 +1384,7 @@ export const articles: readonly Article[] = [
         ],
         [
           "uncategorized",
-          "expenses:uncategorized is not zero. Categorize the relevant transactions."
+          "Transactions still post to expenses:uncategorized. The warning counts them even when their amounts cancel out. Open Categorize to review those transactions."
         ],
         [
           "duplicate-display-name",
