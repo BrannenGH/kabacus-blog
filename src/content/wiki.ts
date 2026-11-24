@@ -26,6 +26,851 @@ export const groups = ["Start here", "Everyday use", "Beyond the window", "Refer
 
 export const articles: readonly Article[] = [
 {
+  "slug": "transaction-import",
+  "title": "Import bank and credit card transactions",
+  "summary": "Planned statement import from OFX, QFX, CSV and SimpleFIN, with review and duplicate detection.",
+  "group": "Everyday use",
+  "blocks": [
+    {
+      "type": "p",
+      "text": "This chapter describes planned statement import. The feature will arrive in stages. The KDE and web flows are subject to design approval."
+    },
+    {
+      "type": "h2",
+      "text": "A1. Goal and scope"
+    },
+    {
+      "type": "p",
+      "text": "People get their bank and credit card activity into the books without typing it, and without creating doubles of what is already there."
+    },
+    {
+      "type": "p",
+      "text": "In the first release"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Import a statement file into one chosen account: OFX/QFX and CSV.",
+        "Import from SimpleFIN: connect once, link remote accounts to accounts in the books, sync on request.",
+        "It works for books in a local .kabacus file: the access is kept in the file, so every app that opens the file can sync.",
+        "It works on a server for many people: each person has their own access, which no one else can see or use.",
+        "Target accounts: bank accounts (kind money) and credit cards (kind revolving-debt).",
+        "Everything imported is categorized to expenses:uncategorized, money in and money out alike.",
+        "De-duplication against earlier imports and against transactions already entered by hand.",
+        "Available in the KDE app, the web app, kabacus-cli, the HTTP API and MCP, for local and server books alike."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Not in the first release (see A10): categorization rules, payee clean-up, transfer matching, pending transactions, scheduled sync, investments, loans, other currencies, QIF/CAMT/MT940, more than one SimpleFIN access per person per books."
+    },
+    {
+      "type": "h2",
+      "text": "A2. Terms"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Source: where rows come from: an OFX file, a CSV file, or a SimpleFIN account.",
+        "Row: one bank-side transaction after parsing: {import_id, date, amount, description}.",
+        "Amount sign: the change in the account's balance from the holder's side. Money into a bank account is positive. A card purchase is negative (more owed); a card payment or refund is positive. OFX and SimpleFIN already use this sign (\"positive numbers indicate money being deposited into the account\"); CSV is mapped to it.",
+        "Import id: a string that identifies a row within its target account (A5.1).",
+        "Target: the account in the books a source is imported into.",
+        "Access: one person's claimed SimpleFIN Access URL for one set of books (A7.2)."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A3. What an imported row becomes"
+    },
+    {
+      "type": "p",
+      "text": "Each new row becomes one balanced transaction, dated the row's posted date, status cleared, description as in A3.3, tagged import-id."
+    },
+    {
+      "type": "h2",
+      "text": "A3.1 Bank account (kind money)"
+    },
+    {
+      "type": "p",
+      "text": "For a row of amount a into assets:bank:checking:"
+    },
+    {
+      "type": "table",
+      "columns": [
+        "Account",
+        "Amount"
+      ],
+      "rows": [
+        [
+          "assets:bank:checking",
+          "a"
+        ],
+        [
+          "expenses:uncategorized",
+          "−a"
+        ]
+      ]
+    },
+    {
+      "type": "p",
+      "text": "The posting goes to the money account itself (free money), never to a fund or reserve under it."
+    },
+    {
+      "type": "h2",
+      "text": "A3.2 Credit card (kind revolving-debt)"
+    },
+    {
+      "type": "p",
+      "text": "Every transaction on a card also moves the card's reserve. A row of amount a is a purchase of p = −a paid from free money, exactly what record_card_purchase with source: \"free\" writes:"
+    },
+    {
+      "type": "table",
+      "columns": [
+        "Account",
+        "Amount"
+      ],
+      "rows": [
+        [
+          "expenses:uncategorized",
+          "p"
+        ],
+        [
+          "the card",
+          "−p"
+        ],
+        [
+          "the reserve's home (free money)",
+          "−p"
+        ],
+        [
+          "the card's reserve",
+          "p"
+        ]
+      ]
+    },
+    {
+      "type": "p",
+      "text": "A payment or refund on the card has p negative and the same four lines reversed."
+    },
+    {
+      "type": "p",
+      "text": "This keeps reserves right without transfer matching. A card payment that shows up in both feeds imports as two transactions; together they net to exactly what pay_card writes (card up, reserve down, nothing left in uncategorized, free money unchanged)."
+    },
+    {
+      "type": "p",
+      "text": "A card with no reserve account is refused with an error naming the reserve to create. Nothing is imported for that account."
+    },
+    {
+      "type": "h2",
+      "text": "A3.3 Description"
+    },
+    {
+      "type": "p",
+      "text": "Descriptions follow the books' Payee | memo convention."
+    },
+    {
+      "type": "ul",
+      "items": [
+        "SimpleFIN: the protocol requires only description. The Bridge also sends payee and memo (A7.1). The payee is payee when present, else description. The memo is description when a payee was used and the two differ, else empty. The bank's raw memo and everything else outside the protocol (mcc, extra) are ignored in the first release.",
+        "OFX: payee from NAME (or PAYEE/NAME); memo from MEMO when it adds text not already in the name.",
+        "CSV: payee from the mapped description column(s), joined by a space; no memo."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Whitespace is collapsed and trimmed, and control characters are removed. A literal  |  inside bank text is replaced with  /  so it cannot be read as the separator. An empty payee becomes the account's display name."
+    },
+    {
+      "type": "h2",
+      "text": "A3.4 Refusals"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "A source in a currency other than the books' commodity: currency_mismatch, nothing imported. This includes SimpleFIN custom currencies, whose currency is a URL (reward points and the like); the URL is never fetched.",
+        "An amount with more decimal places than the commodity takes: that row is an error (amount), and the import as a whole is refused.",
+        "A zero-amount row is skipped and reported.",
+        "A target that is not money or revolving-debt, or is synthetic: account_kind."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A4. The import operation"
+    },
+    {
+      "type": "p",
+      "text": "One operation, used by files and by SimpleFIN sync. It follows the existing write contract."
+    },
+    {
+      "type": "ul",
+      "items": [
+        "head is required; a stale head is a conflict.",
+        "dry_run defaults to true. A dry run runs the same parsing, matching and ledger validation as a commit and writes nothing.",
+        "A commit is one store revision for the whole import, attributed to the caller, with audit kind import and a summary such as import: 37 added, 4 matched (Everyday Checking, OFX).",
+        "Atomic: any error writes nothing.",
+        "An import with nothing to add and nothing to match writes no revision and says so.",
+        "Role: ledger-write. Matching (A5.2) edits tags and status in place through the normal edit path; it is not rewrite-class.",
+        "Limits: 5 MB per file, 5,000 rows per import; over either is refused (import_too_large). Both are configurable on the server."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Result (dry run and commit alike):"
+    },
+    {
+      "type": "code",
+      "text": "{\n  \"head\": \"...\", \"dry_run\": true,\n  \"account\": \"assets:bank:checking\",\n  \"source\": {\"format\": \"ofx\", \"account_hint\": \"…6042\", \"from\": \"2026-09-01\", \"to\": \"2026-10-31\"},\n  \"counts\": {\"new\": 37, \"matched\": 4, \"duplicate\": 112, \"skipped\": 2, \"error\": 0},\n  \"rows\": [\n    {\"import_id\": \"ofx:20261014-0031\", \"date\": \"2026-10-14\", \"amount\": \"-62.18\",\n     \"description\": \"Corner Market\", \"outcome\": \"new\", \"transaction\": 5121},\n    {\"import_id\": \"ofx:20261015-0007\", \"date\": \"2026-10-15\", \"amount\": \"-18.40\",\n     \"description\": \"Harbor Street Cafe\", \"outcome\": \"matched\", \"transaction\": 5088,\n     \"candidates\": [5088]}\n  ],\n  \"balance_check\": {\"date\": \"2026-10-31\", \"reported\": \"2413.07\", \"books\": \"2413.07\", \"difference\": \"0.00\"},\n  \"warnings\": []\n}"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "outcome is new, matched, duplicate, skipped or error. transaction is the id created or matched (absent on a dry run for new).",
+        "rows is paged like other large reads (limit, cursor); duplicate rows are left out unless include_duplicates: true. counts always covers everything.",
+        "balance_check appears when the source reports a balance (OFX LEDGERBAL, SimpleFIN balance and balance-date, an optional CSV balance column). books is the target's balance at the end of that date after the import (inclusive for a money account, as in reconcile). A difference is reported, never blocks, and writes no assertion; closing it is reconcile's job."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Options"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "since (date): rows posted before it are skipped. Default: none for a file; for SimpleFIN see A7.4.",
+        "decisions: per-row overrides from the review step, [{import_id, action, transaction?}] with action add (import as new even though a match was proposed), skip, or match (with the transaction to match). A decision naming an unknown row or an ineligible transaction is an error."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Because a commit must carry the head it was previewed on, the same content and decisions always produce the previewed result."
+    },
+    {
+      "type": "h2",
+      "text": "A5. De-duplication"
+    },
+    {
+      "type": "h2",
+      "text": "A5.1 Import ids"
+    },
+    {
+      "type": "p",
+      "text": "Every imported or matched transaction carries a tag import-id: <value>. A transaction may carry several (one per source that has reported it)."
+    },
+    {
+      "type": "table",
+      "columns": [
+        "Source",
+        "Value"
+      ],
+      "rows": [
+        [
+          "SimpleFIN",
+          "simplefin:<transaction id> (the protocol guarantees the id is never reused within an account)"
+        ],
+        [
+          "OFX",
+          "ofx:<FITID>"
+        ],
+        [
+          "CSV with an id column",
+          "csv:<id>"
+        ],
+        [
+          "CSV without",
+          "csv:<hash> of posted date, exact amount, normalized description and the row's occurrence number among identical rows in the file (so two identical coffees on one day stay two)"
+        ]
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Ids are compared within the target account only. Ids come from outside and may hold any character (the Bridge's demo account ids contain spaces), so every outside id is percent-encoded before it goes into a tag value."
+    },
+    {
+      "type": "h2",
+      "text": "A5.2 Outcomes, in order"
+    },
+    {
+      "type": "p",
+      "text": "For each row:"
+    },
+    {
+      "type": "ol",
+      "items": [
+        "Duplicate. A transaction with a posting to the target already carries this import-id. Nothing happens.",
+        "Matched. Otherwise, look for an existing transaction that looks like the same event entered another way (by hand, by an agent, or from a different source): it has a posting to the target for exactly the row's amount; its date is from 5 days before to 1 day after the row's date; it carries no import-id from the same kind of source (simplefin, ofx, csv); it has not already been matched by another row in this import."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "With several candidates, the nearest date wins, then the lowest id; all are listed in candidates so the review step can offer the choice. A match adds the `import-id` tag and sets the status to cleared, and changes nothing else: no amount, date, account or description. Its category stays as the person entered it."
+    },
+    {
+      "type": "ol",
+      "items": [
+        "New. Otherwise the row becomes a transaction as in A3."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "The matching window (5 before, 1 after) is fixed in the first release."
+    },
+    {
+      "type": "h2",
+      "text": "A5.3 Properties that must hold"
+    },
+    {
+      "type": "p",
+      "text": "The guarantee for competing matches is under review. When two source rows can match the same existing transaction, the first committed import can claim it."
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Importing the same source twice: the second import reports only duplicates and writes no revision.",
+        "Importing overlapping date ranges in any order gives the same books as importing their union once.",
+        "A match never changes any balance.",
+        "After any import, the target's balance changes by exactly the sum of the new rows' amounts; every card's owed-minus-reserve difference is unchanged; Cash on Hand still equals money minus funds as defined in the funds chapter."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A6. File import"
+    },
+    {
+      "type": "h2",
+      "text": "A6.1 OFX / QFX"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "OFX 1.x (SGML) and 2.x (XML); bank (BANKMSGSRSV1) and credit card (CREDITCARDMSGSRSV1) statements.",
+        "Per STMTTRN: DTPOSTED → date (the date as written, ignoring the time zone suffix), TRNAMT → amount, FITID → id, NAME/PAYEE/MEMO → description.",
+        "CURDEF → currency check. LEDGERBAL → balance check.",
+        "A file with several statements: the result lists them (account_hint, type, row count) and the request says which one (statement index). Importing needs exactly one chosen.",
+        "Guards, as warnings in the preview: a credit card statement into a bank account or the reverse; a file whose account number differs from the one this account last imported from. The account's last four characters are remembered as a declaration tag (import-account: ofx:…6042); the full number is never stored."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A6.2 CSV"
+    },
+    {
+      "type": "p",
+      "text": "The request carries the mapping; the apps remember the last mapping per account in their own settings."
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Delimiter (, ; tab) and header row are detected; UTF-8 with or without BOM, else Windows-1252.",
+        "Mapping: date column and date_format; one or more description columns; either one signed amount column with optional invert (many card exports list purchases as positive), or a debit/credit pair; optional id and balance columns; optional skip_rows.",
+        "Date format is detected only when every row agrees on one reading; an ambiguous file (03/04/2026) is refused until the format is given.",
+        "Amounts are parsed exactly: thousands separators, a decimal comma, parentheses or a trailing minus for negatives, currency symbols. Never through floating point. An unreadable value is a row error naming line and column.",
+        "A dry run with no mapping returns the detected columns, a guess at the mapping and the first rows, so a UI or agent can confirm it."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A6.3 Transport"
+    },
+    {
+      "type": "p",
+      "text": "The file's content travels in the request (content as text, or content_base64). It is parsed, never stored; the audit entry records the format, file name if given, row counts and date range, not the content."
+    },
+    {
+      "type": "h2",
+      "text": "A7. SimpleFIN"
+    },
+    {
+      "type": "h2",
+      "text": "A7.1 The protocol (version 2.0.0-draft)"
+    },
+    {
+      "type": "p",
+      "text": "Three parties: the person, the application (Kabacus) and a SimpleFIN server. Most people use the SimpleFIN Bridge as the server; a bank may run its own. A server has a root URL with four endpoints."
+    },
+    {
+      "type": "p",
+      "text": "Getting access"
+    },
+    {
+      "type": "ol",
+      "items": [
+        "The person visits the server's /create page (for the Bridge, https://bridge.simplefin.org/simplefin/create) and comes back with a SimpleFIN Token (the Bridge calls it a setup token). It is a Base64-encoded URL pointing at the server's POST /claim/:token.",
+        "The application decodes it and sends POST to that URL with an empty body (the Bridge's example sends Content-Length: 0). The response body is the Access URL: the server root with HTTP Basic credentials embedded (https://user:password@host/simplefin).",
+        "The token works once. A 403 on claim means it does not exist or was already claimed, which \"could mean that the user's transaction information has been compromised\"."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Reading data: `GET {root}/accounts` with Basic authentication taken from the Access URL."
+    },
+    {
+      "type": "table",
+      "columns": [
+        "Parameter",
+        "Meaning"
+      ],
+      "rows": [
+        [
+          "version",
+          "2 for this protocol version. The server picks its default if absent, so always send it."
+        ],
+        [
+          "start-date",
+          "Unix seconds. Only transactions on or after it."
+        ],
+        [
+          "end-date",
+          "Unix seconds. Only transactions before it (exclusive)."
+        ],
+        [
+          "pending",
+          "pending=1 includes pending transactions where supported. Off by default."
+        ],
+        [
+          "account",
+          "Only this account id. May repeat."
+        ],
+        [
+          "balances-only",
+          "balances-only=1 returns no transactions."
+        ]
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Responses: 200 with an Account Set; 402 payment required; 403 authentication failed (access revoked or wrong credentials)."
+    },
+    {
+      "type": "p",
+      "text": "`GET {root}/info` returns {\"versions\": [...]}, the protocol version prefixes the server supports. Being a draft, a server reporting 2 \"may not yet support all things from the draft\"."
+    },
+    {
+      "type": "p",
+      "text": "Account Set"
+    },
+    {
+      "type": "table",
+      "columns": [
+        "Field",
+        "Notes"
+      ],
+      "rows": [
+        [
+          "errlist",
+          "Required. Array of Errors (below)."
+        ],
+        [
+          "errors",
+          "Deprecated array of strings from version 1. The Bridge's guide says rate-limit warnings appear there."
+        ],
+        [
+          "connections",
+          "Required. Array of Connections."
+        ],
+        [
+          "accounts",
+          "Required. Array of Accounts."
+        ]
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Connection — one login at one institution. conn_id (required), name (required, human-friendly, includes the institution's name), org_id (required, unique per server), org_url (optional), sfin_url (required). The protocol's samples and the Bridge also send org_name, which the attribute table does not list; treat it as optional."
+    },
+    {
+      "type": "p",
+      "text": "Account — id (required, unique within its Connection only), name, conn_id, currency (ISO 4217 code, or a URL for a custom currency), balance (numeric string), available-balance (optional), balance-date (Unix seconds), transactions (optional, ordered by posted), extra (optional)."
+    },
+    {
+      "type": "p",
+      "text": "Transaction — id (required, never reused within an account), posted (Unix seconds, required; may be 0 while pending), amount (numeric string, positive is money into the account), description (required), transacted_at (optional), pending (optional boolean, default false), extra (optional)."
+    },
+    {
+      "type": "p",
+      "text": "Error — code, msg (text suitable for showing to the person), and conn_id or account_id when it concerns one. Codes are prefix.subcode; an unknown subcode is handled as its bare prefix."
+    },
+    {
+      "type": "table",
+      "columns": [
+        "Code",
+        "Meaning"
+      ],
+      "rows": [
+        [
+          "gen.",
+          "General error"
+        ],
+        [
+          "gen.api",
+          "The API is being misused; for the developer, not the person"
+        ],
+        [
+          "gen.auth",
+          "Authentication to the SimpleFIN server failed"
+        ],
+        [
+          "con.",
+          "Connection-level error (has conn_id)"
+        ],
+        [
+          "con.auth",
+          "The connection needs the person to authenticate again"
+        ],
+        [
+          "act.",
+          "Account-level error (has account_id)"
+        ],
+        [
+          "act.failed",
+          "Account information could not be fetched; try later"
+        ],
+        [
+          "act.missingdata",
+          "The transaction listing is incomplete; try later"
+        ]
+      ]
+    },
+    {
+      "type": "p",
+      "text": "What the protocol requires of an application. Handle a 403 on claim, and tell the person the token may be compromised so they can disable it. Make requests only over HTTPS and verify certificates. Store the Access URL at least as securely as the person's financial data. Handle a 403 from /accounts. Show the errors from /accounts to the person, sanitized. (Recommended: handle custom currencies.)"
+    },
+    {
+      "type": "p",
+      "text": "SimpleFIN Bridge limits and advice (from its developer guide)"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Meant for daily updates: 24 requests or fewer per day, with a little leeway for setup, replenished through the day. All-accounts requests and per-account requests (?account=) have separate quotas.",
+        "Going over first adds warnings to the response's errors array; going further disables the access.",
+        "The range between start-date and end-date is limited to 90 days per request. How much history exists varies by institution.",
+        "Overlap fetch windows by about 5 days so nothing is missed.",
+        "Scheduled fetches should run at a random minute, not on the hour.",
+        "There is a mailing list announcing API changes."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Observed on the Bridge (beta-bridge.simplefin.org, demo token, 2026-11-10). Where this differs from the protocol text, build for what the Bridge does and tolerate what the protocol says."
+    },
+    {
+      "type": "ul",
+      "items": [
+        "GET /simplefin/info answered {\"versions\":[\"1.0\"]}, yet ?version=2 returned the version-2 shape. `/info` cannot be used to decide whether version 2 is supported.",
+        "Without version, /accounts returned the version-1 shape (errors strings, an org object on each account, no connections). With version=2 it returned errlist, connections and conn_id. Always send version=2.",
+        "Transactions carried fields the protocol does not list, at the top level: payee, memo, transacted_at and mcc. Example: {\"id\":\"1792714294\",\"posted\":1792714294,\"amount\":\"-110.00\",\"description\":\"Fishing bait\",\"payee\":\"John's Fishin Shack\",\"memo\":\"JOHNS FISHIN SHACK BAIT\",\"transacted_at\":1792714294,\"mcc\":\"5812\"}.",
+        "Accounts carried a holdings array (investment positions; empty for bank accounts).",
+        "Account ids were free text with spaces (\"Demo Checking\"), and two accounts used the same transaction ids. Ids must be scoped as A5.1 and A7.3 say, and encoded.",
+        "A request for more than 90 days was not refused: it returned 200, capped the range, and added {\"code\":\"gen.api\",\"msg\":\"Requested date range exceeds limit of 90 days and was capped.\"} to errlist. So an errlist entry on a 200 is a warning, even with a gen. code.",
+        "Wrong credentials returned 403 with a JSON body {\"errlist\":[{\"code\":\"gen.auth\",\"msg\":\"Forbidden\"}],\"accounts\":[],\"connections\":[]}.",
+        "A second claim of a token returned 403 with a plain-text body.",
+        "The claim response is text/plain; trim whitespace before parsing the Access URL.",
+        "Cross-origin requests are allowed: both the claim and /accounts answered with Access-Control-Allow-Origin echoing the caller's origin and allowed the Authorization header. A browser app can therefore talk to the Bridge directly.",
+        "The demo's data is generated relative to the current time and its transaction ids change between requests. It is useful for trying the flow by hand and useless for testing de-duplication."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A7.2 Access"
+    },
+    {
+      "type": "p",
+      "text": "One access per person per books."
+    },
+    {
+      "type": "ul",
+      "items": [
+        "In a local .kabacus file there is one person, so the file has at most one access.",
+        "On a server, each member of the books may have their own. A person's access belongs to them alone: no other member, no administrator and no route or tool can read it, use it, or learn the Access URL. Whether a person is connected is visible only to that person."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Connect. The person pastes the token. Kabacus decodes it, checks the URL (below), claims it, and stores the Access URL (A7.5). It answers with the remote accounts, never the URL. Connecting when already connected replaces the old access after confirmation. Needs ledger-write, since an access is only useful for importing."
+    },
+    {
+      "type": "ul",
+      "items": [
+        "A 403 on claim tells the person the token was already used or is invalid, that it may have been compromised, and to disable it at their SimpleFIN server and make a new one.",
+        "The token decodes to a URL chosen by whoever supplied it. The claim URL and the Access URL must be https with certificates verified and must not resolve to a loopback, private or link-local address. Redirects to another host are not followed. On a server the host must also be on a configured allowlist (default: bridge.simplefin.org, beta-bridge.simplefin.org). The apps show the host and ask before claiming."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Status. A person can see their own connection: the host, when it was claimed, the Connections it covers with any warnings from the last fetch, and how many fetches remain today (A7.4)."
+    },
+    {
+      "type": "p",
+      "text": "Disconnect. Deletes the person's access. Links and imported transactions stay. The person is told that revoking the access itself is done at their SimpleFIN server."
+    },
+    {
+      "type": "p",
+      "text": "Removal. An access is deleted when its person leaves the books, when the person's user is deleted, and when the books are deleted."
+    },
+    {
+      "type": "p",
+      "text": "The Access URL is a credential for all of the person's bank data. No route, tool, log line, error message, audit entry or revision ever contains it."
+    },
+    {
+      "type": "h2",
+      "text": "A7.3 Linking accounts"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "List remote accounts: fetched from the caller's own access with balances-only=1. For each: Connection name, account name, currency, balance and date, the linked account if any. errlist is passed through as warnings (A7.4).",
+        "Link: one remote account to one money or revolving-debt account; one-to-one in both directions. Stored on the account's declaration as tag simplefin-account: <conn_id>/<account id> (both parts, since an account id is unique only within its Connection; each part percent-encoded). Links are part of the books: versioned, shared by all members, and carried in every copy. Linking is an ordinary write (ledger-write, head, one revision); unlink removes the tag.",
+        "A person can link only a remote account their own access lists. Any member with ledger-write can unlink.",
+        "A remote account in another currency, or a custom currency, cannot be linked and says why.",
+        "Unlinked remote accounts are ignored by sync and shown as \"not imported\".",
+        "Shared books. A link says which remote account feeds an account; it does not say whose access reads it. When a member syncs, the accounts whose link names a Connection in their access are synced. Accounts linked through another member's access are left alone and shown as \"linked through another member's connection\". If two members can each see the same joint account at their bank, only one of them links it (the one-to-one rule refuses the second), because the two accesses would report different ids for the same transactions."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A7.4 Sync"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Runs on request: a button, an MCP tool, a CLI command (which a person may schedule themselves). No background sync in the first release.",
+        "A sync uses the caller's own access and is recorded as the caller's revision.",
+        "One all-accounts request per sync: GET /accounts?version=2&start-date=…&end-date=…, without pending and without account, so it draws on one quota. Rows for accounts the caller has not linked are discarded. It then runs A4/A5 per linked account and commits one revision for all accounts. The result has one A4 result per account plus the warnings.",
+        "Window per account: since when given; else from 10 days before the latest SimpleFIN-imported transaction on that account; on an account's first sync, the person chooses the start date in the review step (default: the day after the account's latest balance assertion, else 30 days back). The request's start-date is the earliest of these, and rows before an account's own start are skipped. Overlap is safe because of import ids.",
+        "The window never exceeds 90 days. Kabacus refuses a longer one itself, with a message suggesting a file import for older history, rather than relying on the Bridge to cap it.",
+        "Pending transactions are not requested. A row that still arrives with pending: true or posted: 0 is skipped and counted.",
+        "Date: posted, as a UTC calendar date.",
+        "Preview and commit use the same data. A dry run returns a snapshot id; the fetched data is held in memory for 15 minutes; the commit names the snapshot. Only the person who made a snapshot can commit it. An expired snapshot is snapshot_expired and the client previews again. A fetch within 15 minutes of that person's last one reuses its data unless refresh: true.",
+        "Request budget. Each access records the times of its recent requests alongside the Access URL. Kabacus refuses a fetch that would be the 21st in 24 hours for that access and says when the next is allowed, because going over the Bridge's quota disables the access. Budgets are per access, so one member cannot use up another's.",
+        "Responses",
+        "403 from /accounts: the access was revoked or is invalid. Nothing imported; the person is told to reconnect.",
+        "402: the SimpleFIN server needs payment. Nothing imported; its message is shown.",
+        "On a 200, every errlist entry is a warning shown to the person, and the import goes ahead with what arrived:",
+        "con.auth and other con.: on that Connection's accounts (\"sign in to this bank again at your SimpleFIN server\"). Those accounts usually arrive without new rows.",
+        "act.failed and other act.: that account is not imported this time; others are.",
+        "act.missingdata: the account's rows are imported, with a warning that the list may be incomplete and the balance check may differ; a later sync fills the gap.",
+        "gen. (including gen.api): a general warning, also logged for the developer with the Access URL scrubbed.",
+        "Strings in the deprecated errors array are shown as general warnings.",
+        "A response that is not valid version-2 JSON (no accounts array, or accounts without conn_id): nothing imported; the message says the SimpleFIN server does not support protocol version 2.",
+        "A network failure writes nothing.",
+        "Every string from the server (msg, errors, Connection and account names, descriptions) is untrusted text: shown as plain text, control characters removed, messages capped at 300 characters."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A7.5 Where the access is kept"
+    },
+    {
+      "type": "p",
+      "text": "The access is kept in the books' store, next to the books, in both the SQLite and the PostgreSQL store, behaving identically. The SQLite store's schema is the .kabacus file format, so the file format gains this and a local file carries its own SimpleFIN access. Nothing is kept in a platform keyring, an environment variable or the server's configuration."
+    },
+    {
+      "type": "p",
+      "text": "What is stored, per books and person: the Access URL, when it was claimed, and the times of its recent requests. It is not part of any revision, the history or the audit log."
+    },
+    {
+      "type": "p",
+      "text": "Local `.kabacus` file"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Connecting in one app makes sync work in every app that opens that file: the KDE app, the desktop shell, the CLI and the web app (PWA).",
+        "The web app talks to the SimpleFIN server straight from the browser. That needs the server to allow cross-origin requests; the Bridge does (A7.1). With a server that does not, connecting fails with a message saying to use the desktop app or the CLI for this file.",
+        "The file now holds a bank credential. When connecting, the app says so in one sentence: anyone who has this file can read the transactions of the connected banks until the access is disabled at the SimpleFIN server.",
+        "A file from an older version gains the new format on first open, by the usual migration. Older builds handle the newer file by the existing rule for files newer than they understand."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Copies and exports. Save a Copy As…, the server's ledger export, and importing a .kabacus file as new ledgers all move books as a portable image that holds users only as display names. That image does not carry any access: a copy is how books are shared with someone else, and on a server an export would otherwise hand one member's bank credential to another. Links (account tags) and imported transactions do travel, so after opening a copy the person connects again with a new token and sync continues where it left off. A plain file-system copy or backup of a local file is the same file and does contain the access. (Decision C1.)"
+    },
+    {
+      "type": "p",
+      "text": "Server"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "One row per member per books, reachable only as \"the caller's own\".",
+        "SimpleFIN is offered when the server's configuration enables it; the allowlist of SimpleFIN hosts is configuration too.",
+        "The Access URL is stored as the books are: not separately encrypted (Decision C2)."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A8. Surfaces"
+    },
+    {
+      "type": "p",
+      "text": "Every route has its MCP tool, and local MCP offers the same tools. All SimpleFIN routes act on the caller's own access."
+    },
+    {
+      "type": "table",
+      "columns": [
+        "Route",
+        "MCP tool",
+        "Kind"
+      ],
+      "rows": [
+        [
+          "POST /accounts/{account}/import",
+          "import_statement",
+          "write"
+        ],
+        [
+          "GET /simplefin/connection",
+          "get_simplefin_connection",
+          "read (own status)"
+        ],
+        [
+          "PUT /simplefin/connection",
+          "connect_simplefin",
+          "own access, needs ledger-write"
+        ],
+        [
+          "DELETE /simplefin/connection",
+          "disconnect_simplefin",
+          "own access"
+        ],
+        [
+          "GET /simplefin/accounts",
+          "list_simplefin_accounts",
+          "read (own access; one fetch)"
+        ],
+        [
+          "PUT /accounts/{account}/simplefin-link",
+          "link_simplefin_account",
+          "write"
+        ],
+        [
+          "POST /simplefin/sync",
+          "sync_simplefin",
+          "write"
+        ]
+      ]
+    },
+    {
+      "type": "ul",
+      "items": [
+        "The SimpleFIN routes and tools exist only when SimpleFIN is enabled — listed only when usable, like the rewrite tools.",
+        "list_accounts shows, for a linked account, that it is linked and whether the link is served by the caller's access.",
+        "The MCP bookkeeping skill gains an importing guide: preview, show the person the counts, the balance check and every SimpleFIN warning, commit with the same head, then point at what needs categorizing. It also says not to call sync or list repeatedly, because of the daily budget, and never to ask the person to paste an Access URL (only a token, which is single-use).",
+        "kabacus-cli offers the same operations for a local file."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A8.1 App flows (KDE and web, desktop and phone)"
+    },
+    {
+      "type": "p",
+      "text": "Import a file. From an account's page: Import… → pick a file → for CSV, confirm the detected columns over a sample of rows → Review: counts (new, already in your books, already imported), the list of new and matched rows, the balance check, and for a matched row the transaction it matched with a way to change the decision (import as new, pick another, skip) → Import → a confirmation with the count and a Categorize action that opens the uncategorized list."
+    },
+    {
+      "type": "p",
+      "text": "Connect a bank. Settings → Bank connections → Connect SimpleFIN → a link to the SimpleFIN server's create page and a box to paste the token → confirm the host (and, for a local file, the sentence about the file holding the credential) → the remote accounts list grouped by Connection, each with an account picker (bank and card accounts only) or \"Don't import\". Connection warnings (a bank needing sign-in) show here too. On a server the page is titled as the person's own (\"Your bank connection\") and shows accounts linked through other members' connections as read-only rows."
+    },
+    {
+      "type": "p",
+      "text": "Sync. Sync on Overview and on linked accounts' pages → the same Review step, grouped by account, with first-sync start dates and any warnings → Import. A member with no access of their own sees Connect instead of Sync."
+    },
+    {
+      "type": "p",
+      "text": "Review is a full page on phone and a dialog or pane on desktop. Long lists are virtualized. Errors name the file line or the account. All text is translated in every catalog in the same change."
+    },
+    {
+      "type": "h2",
+      "text": "A9. Uncategorized, after import"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "Imported transactions appear at once in the existing uncategorized list, which is where the Categorize action leads. Categorizing is the existing in-place edit: change the expenses:uncategorized posting's account, or for a card purchase paid from a fund, the source line too.",
+        "Change to an existing rule: the uncategorized warning and the Categorize list must be driven by transactions that still have a posting to `expenses:uncategorized`, not by that account's balance. With imports, inflows and outflows (and both halves of a card payment) can net the balance to zero while dozens of transactions still need attention. The warning reports the count."
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "A10. Later, not now"
+    },
+    {
+      "type": "p",
+      "text": "Recorded so the first release leaves room for them and does not half-build them: rules that categorize or rename by payee; recognising the two halves of a transfer or card payment and merging them; pending transactions; scheduled server-side sync (at a random minute, per the Bridge's advice); loans, investments and holdings; other currencies; QIF, CAMT.053, MT940; several SimpleFIN accesses per person; SimpleFIN protocol version 1 servers; using mcc, the bank's raw memo, extra or transacted_at; attaching the original file."
+    },
+    {
+      "type": "h2",
+      "text": "A11. Acceptance"
+    },
+    {
+      "type": "p",
+      "text": "All with synthetic, realistic fixtures (plausible payees, amounts and institution names)."
+    },
+    {
+      "type": "p",
+      "text": "Files and the operation"
+    },
+    {
+      "type": "ol",
+      "items": [
+        "An OFX bank statement of 40 rows imported into an empty checking account: 40 new, one revision, the account's balance equals the file's LEDGERBAL, expenses:uncategorized holds the negated sum.",
+        "The same file again: 40 duplicates, no revision.",
+        "A second file overlapping the first by 15 rows: only the non-overlapping rows are new.",
+        "A hand-entered Harbor Street Cafe −18.40 two days before the bank's posted date: the row is matched; the transaction keeps its category and description, gains the tag and is cleared; no balance changes.",
+        "Two identical rows on one day in a CSV without ids: two transactions; re-import adds none.",
+        "A credit card OFX with purchases, one refund and one payment: after import the card's reserve equals what the card owes, and cash_on_hand shows no new reserve-mismatch.",
+        "A card payment present in both the checking and card imports: after both, the net effect on every account equals one pay_card of that amount, and uncategorized nets to zero for the pair while both still appear in the Categorize list.",
+        "A CSV with 03/04/2026 dates and no format given is refused with a message asking for the date format; with the format it imports.",
+        "A EUR file into USD books: currency_mismatch, nothing written.",
+        "A stale head on commit: conflict, nothing written."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "SimpleFIN (against an in-memory mock that behaves as A7.1 \"Observed on the Bridge\")"
+    },
+    {
+      "type": "ol",
+      "items": [
+        "Connect with a token; a second claim of the same token gets 403 and the \"may be compromised\" message; the mock's /info says [\"1.0\"] and connecting still works.",
+        "List shows two Connections whose accounts share an account id containing a space; each links to a different account. Sync previews, then commits with the snapshot as one revision covering both, having made exactly one /accounts request carrying version=2. A row with payee and description becomes payee | description. A pending row is counted and not imported. A second sync adds nothing.",
+        "A token whose URL is http://, resolves to a private address, or (on a server) is not on the allowlist is refused before any request is sent.",
+        "The Access URL appears in no response, log, audit entry, revision or exported file (asserted by searching them in the test).",
+        "errlist with con.auth for one Connection, act.failed for an account of another, and a gen.api capping notice: the affected accounts import nothing and carry their warnings, the rest import, and the gen.api message is shown as a warning. An unknown code act.somethingnew is handled as act..",
+        "A 403 from /accounts imports nothing and asks the person to reconnect. A version-1-shaped response is refused with the protocol-version message.",
+        "A sync asking for more than 90 days is refused without a request being sent; a twenty-first fetch within 24 hours is refused with the time of the next allowed one, and the count survives a restart.",
+        "A remote account whose currency is a URL cannot be linked, and the URL is never requested."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Storage and tenancy"
+    },
+    {
+      "type": "ol",
+      "items": [
+        "Local file: connect, close the store, reopen the same file, sync works without a new token. Save a Copy As… produces a file with the links and transactions and no access; syncing the copy asks to connect.",
+        "Server, two members of the same books, each with their own access on different Connections: each one's list shows only their own remote accounts; each one's sync imports only accounts linked through their own access and reports the other's as linked through another member; neither can commit the other's snapshot; one member exhausting their request budget does not affect the other.",
+        "Server: no route or tool, called as member B or as an administrator, reveals whether member A is connected or anything about A's access. Removing A from the books deletes A's access.",
+        "Server ledger export contains no access for any member.",
+        "Cases 19–22 pass on SQLite and on PostgreSQL where they apply (the shared store suite)."
+      ]
+    },
+    {
+      "type": "p",
+      "text": "Everywhere"
+    },
+    {
+      "type": "ol",
+      "items": [
+        "Local books and server books give identical results for cases 1–7 and 12 (the shared suite).",
+        "Each app flow in A8.1 passes GUI end-to-end at 1280 × 800 and 390 × 844."
+      ]
+    }
+  ]
+},
+{
   "slug": "manual-scope",
   "title": "About this manual and implementation status",
   "summary": "What this manual covers, which interface to use, and where behavior is still planned.",
