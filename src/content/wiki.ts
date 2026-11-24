@@ -33,7 +33,7 @@ export const articles: readonly Article[] = [
   "blocks": [
     {
       "type": "p",
-      "text": "This chapter describes planned statement import. The feature will arrive in stages. Check your installed version for availability."
+      "text": "Kabacus imports statement files and SimpleFIN transactions. Check your installed version for availability."
     },
     {
       "type": "h2",
@@ -677,7 +677,7 @@ export const articles: readonly Article[] = [
       "type": "ul",
       "items": [
         "Connecting in one app makes sync work in every app that opens that file: the KDE app, the desktop shell, the CLI and the web app (PWA).",
-        "The web app talks to the SimpleFIN server straight from the browser. That needs the server to allow cross-origin requests; the Bridge does (A7.1). With a server that does not, connecting fails with a message saying to use the desktop app or the CLI for this file.",
+        "For a local file, the browser connects directly to the official SimpleFIN Bridge hosts at bridge.simplefin.org and beta-bridge.simplefin.org. Use the desktop app or CLI for a different SimpleFIN host. The browser cannot verify the addresses returned by DNS.",
         "The file now holds a bank credential. When connecting, the app says so in one sentence: anyone who has this file can read the transactions of the connected banks until the access is disabled at the SimpleFIN server.",
         "A file from an older version gains the new format on first open, by the usual migration. Older builds handle the newer file by the existing rule for files newer than they understand."
       ]
@@ -766,19 +766,19 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Import a file. From an account's page: Import… → pick a file → for CSV, confirm the detected columns over a sample of rows → Review: counts (new, already in your books, already imported), the list of new and matched rows, the balance check, and for a matched row the transaction it matched with a way to change the decision (import as new, pick another, skip) → Import → a confirmation with the count and a Categorize action that opens the uncategorized list."
+      "text": "Import a file. From an account's page, choose Import statement… and pick a file → for CSV, confirm the detected columns over a sample of rows → Review: counts (new, already in your books, already imported), the list of new and matched rows, the balance check, and for a matched row the transaction it matched with a way to change the decision (import as new, pick another, skip) → Import → a confirmation with the count and a Categorize action that opens the uncategorized list."
     },
     {
       "type": "p",
-      "text": "Connect a bank. Settings → Bank connections → Connect SimpleFIN → a link to the SimpleFIN server's create page and a box to paste the token → confirm the host (and, for a local file, the sentence about the file holding the credential) → the remote accounts list grouped by Connection, each with an account picker (bank and card accounts only) or \"Don't import\". Connection warnings (a bank needing sign-in) show here too. On a server the page is titled as the person's own (\"Your bank connection\") and shows accounts linked through other members' connections as read-only rows."
+      "text": "Connect a bank in KDE or the web app. Open Settings → Bank connections and follow Get a SimpleFIN setup token to the Bridge. Paste the token, select Connect SimpleFIN, check the host, and select Connect. For a local file, the confirmation explains that the file holds the bank credential. When the bank accounts appear, choose the matching account in your books or select Don’t import. Connection warnings (a bank needing sign-in) show here too. On a server the page is titled as the person's own (\"Your bank connection\") and shows accounts linked through other members' connections as read-only rows."
     },
     {
       "type": "p",
-      "text": "Sync. Sync on Overview and on linked accounts' pages → the same Review step, grouped by account, with first-sync start dates and any warnings → Import. A member with no access of their own sees Connect instead of Sync."
+      "text": "To import, select Sync from Bank connections, Overview, or a linked account’s register. Select Review, check the transactions and any warnings, then select Import. You can adjust each account’s start date and review again. Select Categorize to open the imported transactions that still need a category."
     },
     {
       "type": "p",
-      "text": "Review is a full page on phone and a dialog or pane on desktop. Long lists are virtualized. Errors name the file line or the account. All text is translated in every catalog in the same change."
+      "text": "Review is a full page on phone and a dialog or pane on desktop. Long lists are paged. Errors name the file line or the account. All text is translated in every catalog in the same change."
     },
     {
       "type": "h2",
