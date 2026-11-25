@@ -51,7 +51,7 @@ export const articles: readonly Article[] = [
       "type": "ul",
       "items": [
         "Import a statement file into one chosen account: OFX/QFX and CSV.",
-        "Import from SimpleFIN: connect once, link remote accounts to accounts in the books, sync on request.",
+        "Import from SimpleFIN: connect once, link remote accounts to accounts in the books, then review the first import and sync automatically while the app is open.",
         "It works for books in a local .kabacus file: the access is kept in the file, so every app that opens the file can sync.",
         "It works on a server for many people: each person has their own access, which no one else can see or use.",
         "Target accounts: bank accounts (kind money) and credit cards (kind revolving-debt).",
@@ -62,7 +62,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Not in the first release (see A10): categorization rules, payee clean-up, transfer matching, pending transactions, scheduled sync, investments, loans, other currencies, QIF/CAMT/MT940, more than one SimpleFIN access per person per books."
+      "text": "Not in the first release (see A10): categorization rules, payee clean-up, transfer matching, pending transactions, unattended server scheduling, investments, loans, other currencies, QIF/CAMT/MT940, more than one SimpleFIN access per person per books."
     },
     {
       "type": "h2",
@@ -587,11 +587,12 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Connect. The person pastes the token. Kabacus decodes it, checks the URL (below), claims it, and stores the Access URL (A7.5). It answers with the remote accounts, never the URL. Connecting when already connected replaces the old access after confirmation. Needs ledger-write, since an access is only useful for importing."
+      "text": "Connect. The person pastes the token. Kabacus decodes it, checks the URL (below), claims it, and stores the Access URL (A7.5). It answers with the remote accounts, never the URL. Connecting when already connected shows a replacement confirmation with a Replace connection button before claiming the new token. Needs ledger-write, since an access is only useful for importing."
     },
     {
       "type": "ul",
       "items": [
+        "If the Bridge requires payment after the token was claimed, Kabacus keeps the connection. After paying, select Refresh accounts to fetch the account list with the saved access.",
         "A 403 on claim tells the person the token was already used or is invalid, that it may have been compromised, and to disable it at their SimpleFIN server and make a new one.",
         "The token decodes to a URL chosen by whoever supplied it. The claim URL and the Access URL must be https with certificates verified and must not resolve to a loopback, private or link-local address. Redirects to another host are not followed. On a server the host must also be on a configured allowlist (default: bridge.simplefin.org, beta-bridge.simplefin.org). The apps show the host and ask before claiming."
       ]
@@ -619,8 +620,8 @@ export const articles: readonly Article[] = [
     {
       "type": "ul",
       "items": [
-        "List remote accounts: fetched from the caller's own access with balances-only=1. For each: Connection name, account name, currency, balance and date, the linked account if any. errlist is passed through as warnings (A7.4).",
-        "Link: one remote account to one money or revolving-debt account; one-to-one in both directions. Stored on the account's declaration as tag simplefin-account: <conn_id>/<account id> (both parts, since an account id is unique only within its Connection; each part percent-encoded). Links are part of the books: versioned, shared by all members, and carried in every copy. Linking is an ordinary write (ledger-write, head, one revision); unlink removes the tag.",
+        "List remote accounts: fetched from the caller's own access with balances-only=1. For each: Connection name, account name, currency, balance and date, the linked account if any. errlist is passed through as warnings (A7.4). Refresh accounts requests a fresh list and uses one request from the daily limit.",
+        "Link: one remote account to one money or revolving-debt account; one-to-one in both directions. Stored on the account's declaration as tag simplefin-account: <conn_id>/<account id> (both parts, since an account id is unique only within its Connection; each part percent-encoded). Links are part of the books: versioned, shared by all members, and carried in every copy. Linking is an ordinary write (ledger-write, head, one revision); unlink removes the tag. The link operation can declare a new bank or credit card account and link it in the same revision. For a new card, Kabacus also declares the card’s configured reserve in that revision.",
         "A person can link only a remote account their own access lists. Any member with ledger-write can unlink.",
         "A remote account in another currency, or a custom currency, cannot be linked and says why.",
         "Unlinked remote accounts are ignored by sync and shown as \"not imported\".",
@@ -642,10 +643,11 @@ export const articles: readonly Article[] = [
         "Pending transactions are not requested. A row that still arrives with pending: true or posted: 0 is skipped and counted.",
         "Date: posted, as a UTC calendar date.",
         "Preview and commit use the same data. A dry run returns a snapshot id; the fetched data is held in memory for 15 minutes; the commit names the snapshot. Only the person who made a snapshot can commit it. An expired snapshot is snapshot_expired and the client previews again. A fetch within 15 minutes of that person's last one reuses its data unless refresh: true.",
+        "Automatic sync. After a manual import adds or matches a transaction on a mapping, Kabacus checks for new activity while the app is active and the person has write access. It checks on return to the app and every 15 minutes while active. An automatic check can fetch once six hours have passed since the last SimpleFIN request on that access, across all devices. It starts from the end of the reviewed window and looks back at most 90 days. If several transactions could match the same row, open the manual review to choose. Unlinking clears the reviewed window for that mapping.",
         "Request budget. Each access records the times of its recent requests alongside the Access URL. Kabacus refuses a fetch that would be the 21st in 24 hours for that access and says when the next is allowed, because going over the Bridge's quota disables the access. Budgets are per access, so one member cannot use up another's.",
         "Responses",
         "403 from /accounts: the access was revoked or is invalid. Nothing imported; the person is told to reconnect.",
-        "402: the SimpleFIN server needs payment. Nothing imported; its message is shown.",
+        "402: Kabacus explains that a paid SimpleFIN account is required. Nothing is imported.",
         "On a 200, every errlist entry is a warning shown to the person, and the import goes ahead with what arrived:",
         "con.auth and other con.: on that Connection's accounts (\"sign in to this bank again at your SimpleFIN server\"). Those accounts usually arrive without new rows.",
         "act.failed and other act.: that account is not imported this time; others are.",
@@ -737,17 +739,17 @@ export const articles: readonly Article[] = [
         [
           "GET /simplefin/accounts",
           "list_simplefin_accounts",
-          "read (own access; one fetch)"
+          "read own access. Set refresh to true to fetch a fresh list."
         ],
         [
           "PUT /accounts/{account}/simplefin-link",
           "link_simplefin_account",
-          "write"
+          "write. Set create to money or revolving-debt to declare a new account."
         ],
         [
           "POST /simplefin/sync",
           "sync_simplefin",
-          "write"
+          "write. Use automatic: true to run a due automatic sync on the supplied head."
         ]
       ]
     },
@@ -770,11 +772,11 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Connect a bank in KDE or the web app. On a phone, open More → Settings. In Settings, choose Connect SimpleFIN under Bank connections. If the button is disabled, check that your server offers SimpleFIN and that you have permission to connect a bank. Follow Get a SimpleFIN setup token to the Bridge. Paste the token, select Connect SimpleFIN, check the host, and select Connect. For a local file, the confirmation explains that the file holds the bank credential. When the bank accounts appear, choose the matching account in your books or select Don’t import. Connection warnings (a bank needing sign-in) show here too. On a server the page is titled as the person's own (\"Your bank connection\") and shows accounts linked through other members' connections as read-only rows."
+      "text": "Connect a bank in KDE or the web app. On a phone, open More → Settings. Choose Connect SimpleFIN under Bank connections. If the button is disabled, check that your server offers SimpleFIN and that you have permission to connect a bank. Follow Get a SimpleFIN setup token to the Bridge. Paste the token, select Connect SimpleFIN, check the host, and select Connect or Replace connection. For a local file, the confirmation explains that the file holds the bank credential. Use Refresh accounts to fetch the latest list. For each account, choose an existing bank or card account, select New bank account… or New credit card… and name it, or leave it set to Don’t import. Connection warnings (a bank needing sign-in) show here too. On a server the page is titled as the person's own (\"Your bank connection\") and shows accounts linked through other members' connections as read-only rows."
     },
     {
       "type": "p",
-      "text": "To import, select Sync from Bank connections, Overview, or a linked account’s register. Select Review, check the transactions and any warnings, then select Import. You can adjust each account’s start date and review again. Select Categorize to open the imported transactions that still need a category."
+      "text": "To import, select Sync in Settings → Bank connections or from a linked account’s register. Select Review, check the transactions and any warnings, then select Import. You can adjust each account’s start date and review again. Select Categorize to open the imported transactions that still need a category. After the first import, Kabacus checks for new activity automatically while the app is active. Use Sync in Bank connections whenever you want to review the import yourself."
     },
     {
       "type": "p",
@@ -797,7 +799,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Recorded so the first release leaves room for them and does not half-build them: rules that categorize or rename by payee; recognising the two halves of a transfer or card payment and merging them; pending transactions; scheduled server-side sync (at a random minute, per the Bridge's advice); loans, investments and holdings; other currencies; QIF, CAMT.053, MT940; several SimpleFIN accesses per person; SimpleFIN protocol version 1 servers; using mcc, the bank's raw memo, extra or transacted_at; attaching the original file."
+      "text": "Recorded so the first release leaves room for them and does not half-build them: rules that categorize or rename by payee; recognising the two halves of a transfer or card payment and merging them; pending transactions; server-side scheduling for when all apps are closed; loans, investments and holdings; other currencies; QIF, CAMT.053, MT940; several SimpleFIN accesses per person; SimpleFIN protocol version 1 servers; using mcc, the bank's raw memo, extra or transacted_at; attaching the original file."
     },
     {
       "type": "h2",
