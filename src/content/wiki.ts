@@ -51,7 +51,7 @@ export const articles: readonly Article[] = [
       "type": "ul",
       "items": [
         "Import a statement file into one chosen account: OFX/QFX and CSV.",
-        "Import from SimpleFIN: connect once, link remote accounts to accounts in the books, sync on request.",
+        "Import from SimpleFIN: connect once, link remote accounts to accounts in the books, then review the first import and sync automatically while the app is open.",
         "It works for books in a local .kabacus file: the access is kept in the file, so every app that opens the file can sync.",
         "It works on a server for many people: each person has their own access, which no one else can see or use.",
         "Target accounts: bank accounts (kind money) and credit cards (kind revolving-debt).",
@@ -62,7 +62,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Not in the first release (see A10): categorization rules, payee clean-up, transfer matching, pending transactions, scheduled sync, investments, loans, other currencies, QIF/CAMT/MT940, more than one SimpleFIN access per person per books."
+      "text": "Not in the first release (see A10): categorization rules, payee clean-up, transfer matching, pending transactions, unattended server scheduling, investments, loans, other currencies, QIF/CAMT/MT940, more than one SimpleFIN access per person per books."
     },
     {
       "type": "h2",
@@ -643,6 +643,7 @@ export const articles: readonly Article[] = [
         "Pending transactions are not requested. A row that still arrives with pending: true or posted: 0 is skipped and counted.",
         "Date: posted, as a UTC calendar date.",
         "Preview and commit use the same data. A dry run returns a snapshot id; the fetched data is held in memory for 15 minutes; the commit names the snapshot. Only the person who made a snapshot can commit it. An expired snapshot is snapshot_expired and the client previews again. A fetch within 15 minutes of that person's last one reuses its data unless refresh: true.",
+        "Automatic sync. After a manual import adds or matches a transaction on a mapping, Kabacus checks for new activity while the app is active and the person has write access. It checks on return to the app and every 15 minutes while active. An automatic check can fetch once six hours have passed since the last SimpleFIN request on that access, across all devices. It starts from the end of the reviewed window and looks back at most 90 days. If several transactions could match the same row, open the manual review to choose. Unlinking clears the reviewed window for that mapping.",
         "Request budget. Each access records the times of its recent requests alongside the Access URL. Kabacus refuses a fetch that would be the 21st in 24 hours for that access and says when the next is allowed, because going over the Bridge's quota disables the access. Budgets are per access, so one member cannot use up another's.",
         "Responses",
         "403 from /accounts: the access was revoked or is invalid. Nothing imported; the person is told to reconnect.",
@@ -738,7 +739,7 @@ export const articles: readonly Article[] = [
         [
           "GET /simplefin/accounts",
           "list_simplefin_accounts",
-          "read own access. Use refresh=true over HTTP to fetch a fresh list."
+          "read own access. Set refresh to true to fetch a fresh list."
         ],
         [
           "PUT /accounts/{account}/simplefin-link",
@@ -748,7 +749,7 @@ export const articles: readonly Article[] = [
         [
           "POST /simplefin/sync",
           "sync_simplefin",
-          "write"
+          "write. Use automatic: true to run a due automatic sync on the supplied head."
         ]
       ]
     },
@@ -775,7 +776,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "To import, select Sync in Settings → Bank connections or from a linked account’s register. Select Review, check the transactions and any warnings, then select Import. You can adjust each account’s start date and review again. Select Categorize to open the imported transactions that still need a category."
+      "text": "To import, select Sync in Settings → Bank connections or from a linked account’s register. Select Review, check the transactions and any warnings, then select Import. You can adjust each account’s start date and review again. Select Categorize to open the imported transactions that still need a category. After the first import, Kabacus checks for new activity automatically while the app is active. Use Sync in Bank connections whenever you want to review the import yourself."
     },
     {
       "type": "p",
@@ -798,7 +799,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Recorded so the first release leaves room for them and does not half-build them: rules that categorize or rename by payee; recognising the two halves of a transfer or card payment and merging them; pending transactions; scheduled server-side sync (at a random minute, per the Bridge's advice); loans, investments and holdings; other currencies; QIF, CAMT.053, MT940; several SimpleFIN accesses per person; SimpleFIN protocol version 1 servers; using mcc, the bank's raw memo, extra or transacted_at; attaching the original file."
+      "text": "Recorded so the first release leaves room for them and does not half-build them: rules that categorize or rename by payee; recognising the two halves of a transfer or card payment and merging them; pending transactions; server-side scheduling for when all apps are closed; loans, investments and holdings; other currencies; QIF, CAMT.053, MT940; several SimpleFIN accesses per person; SimpleFIN protocol version 1 servers; using mcc, the bank's raw memo, extra or transacted_at; attaching the original file."
     },
     {
       "type": "h2",
