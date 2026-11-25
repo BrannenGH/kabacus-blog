@@ -1594,7 +1594,7 @@ export const articles: readonly Article[] = [
       p("Journal import has been retired. Start new books, record each account’s opening balance with Postings against equity:opening, and reconcile against your statements. kabacus-cli export can still write your books as an hledger journal. See Export to hledger."),
       h2("Where things are"),
       p("The sidebar lists the destinations in a fixed order: Overview, Transactions, Reserves, Credit, Loans, People, Reports and Activity. Settings is at the foot. The foot of the sidebar also says where your books live and that every change is saved. Overview opens with Available to spend: your Cash on Hand."),
-      p("On Plasma 6.2 or later, enter panel edit mode, choose Add Widgets, and add Kabacus to a horizontal panel. The panel shows Available to spend while a book is open in the KDE app. Click the amount to see up to five recent transactions with their dates and amounts. If you have several books open, the widget follows the last book window you used. Its figures clear when you close the books or lose access."),
+      p("On Plasma 6.2 or later, enter panel edit mode, choose Add Widgets, and add Kabacus to a horizontal panel. The panel shows Available to spend while a book is open in the KDE app. Click the amount to see up to five recent transactions with their dates and amounts. If you have several books open, the widget follows the last book window you used. Its figures clear when you close the book or sign out."),
 {
       "type": "h2",
       "text": "Check before relying on the books"
