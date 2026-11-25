@@ -694,7 +694,7 @@ export const articles: readonly Article[] = [
       "type": "ul",
       "items": [
         "One row per member per books, reachable only as \"the caller's own\".",
-        "SimpleFIN is offered when the server's configuration enables it; the allowlist of SimpleFIN hosts is configuration too.",
+        "SimpleFIN is available by default. Server operators can turn it off with `[import.simplefin]` and `enabled = false` in the server configuration. The default allowlist permits the official SimpleFIN Bridge hosts.",
         "The Access URL is stored as the books are: not separately encrypted (Decision C2)."
       ]
     },
@@ -770,7 +770,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Connect a bank in KDE or the web app. Open Settings → Bank connections and follow Get a SimpleFIN setup token to the Bridge. Paste the token, select Connect SimpleFIN, check the host, and select Connect. For a local file, the confirmation explains that the file holds the bank credential. When the bank accounts appear, choose the matching account in your books or select Don’t import. Connection warnings (a bank needing sign-in) show here too. On a server the page is titled as the person's own (\"Your bank connection\") and shows accounts linked through other members' connections as read-only rows."
+      "text": "Connect a bank in KDE or the web app. On a phone, open More → Settings. In Settings, choose Connect SimpleFIN under Bank connections. If the button is disabled, check that your server offers SimpleFIN and that you have permission to connect a bank. Follow Get a SimpleFIN setup token to the Bridge. Paste the token, select Connect SimpleFIN, check the host, and select Connect. For a local file, the confirmation explains that the file holds the bank credential. When the bank accounts appear, choose the matching account in your books or select Don’t import. Connection warnings (a bank needing sign-in) show here too. On a server the page is titled as the person's own (\"Your bank connection\") and shows accounts linked through other members' connections as read-only rows."
     },
     {
       "type": "p",
