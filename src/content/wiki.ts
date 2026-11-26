@@ -189,7 +189,7 @@ export const articles: readonly Article[] = [
       "type": "ul",
       "items": [
         "A source in a currency other than the books' commodity: currency_mismatch, nothing imported. This includes SimpleFIN custom currencies, whose currency is a URL (reward points and the like); the URL is never fetched.",
-        "An amount with more decimal places than the commodity takes: that row is an error (amount), and the import as a whole is refused.",
+        "An amount with more decimal places than the commodity takes is a row error. OFX and SimpleFIN amounts with more than one sign are also row errors. A row error refuses the whole import.",
         "A zero-amount row is skipped and reported.",
         "A target that is not money or revolving-debt, or is synthetic: account_kind."
       ]
@@ -238,7 +238,7 @@ export const articles: readonly Article[] = [
       "type": "ul",
       "items": [
         "since (date): rows posted before it are skipped. Default: none for a file; for SimpleFIN see A7.4.",
-        "decisions: per-row overrides from the review step, [{import_id, action, transaction?}] with action add (import as new even though a match was proposed), skip, or match (with the transaction to match). A decision naming an unknown row or an ineligible transaction is an error."
+        "decisions: per-row overrides from the review step, [{import_id, action, transaction?}] with action add (import as new even though a match was proposed), skip, or match (with the transaction to match). A decision naming an unknown row or an ineligible transaction is an error. A match decision on a zero-amount row or a row before the start date is also an error."
       ]
     },
     {
@@ -284,7 +284,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Ids are compared within the target account only. Ids come from outside and may hold any character (the Bridge's demo account ids contain spaces), so every outside id is percent-encoded before it goes into a tag value."
+      "text": "Kabacus compares IDs within the target account. For SimpleFIN it also checks the server, Connection and remote account, so two bank feeds can use the same ID. Transaction IDs must contain a non-whitespace character. Kabacus percent-encodes outside IDs before storing them in tags. Rows in the same import with the same ID must agree on the posted date and amount."
     },
     {
       "type": "h2",
@@ -343,8 +343,8 @@ export const articles: readonly Article[] = [
     {
       "type": "ul",
       "items": [
-        "OFX 1.x (SGML) and 2.x (XML); bank (BANKMSGSRSV1) and credit card (CREDITCARDMSGSRSV1) statements.",
-        "Per STMTTRN: DTPOSTED → date (the date as written, ignoring the time zone suffix), TRNAMT → amount, FITID → id, NAME/PAYEE/MEMO → description.",
+        "OFX 1.x (SGML) and 2.x (XML, including files without an XML declaration); bank (BANKMSGSRSV1) and credit card (CREDITCARDMSGSRSV1) statements.",
+        "Per STMTTRN: DTPOSTED → date (the date as written, ignoring the time zone offset), TRNAMT → amount, FITID → id, NAME/PAYEE/MEMO → description. A malformed timestamp is a row error.",
         "CURDEF → currency check. LEDGERBAL → balance check.",
         "A file with several statements: the result lists them (account_hint, type, row count) and the request says which one (statement index). Importing needs exactly one chosen.",
         "Guards, as warnings in the preview: a credit card statement into a bank account or the reverse; a file whose account number differs from the one this account last imported from. The account's last four characters are remembered as a declaration tag (import-account: ofx:…6042); the full number is never stored."
@@ -361,8 +361,8 @@ export const articles: readonly Article[] = [
     {
       "type": "ul",
       "items": [
-        "Delimiter (, ; tab) and header row are detected; UTF-8 with or without BOM, else Windows-1252.",
-        "Mapping: date column and date_format; one or more description columns; either one signed amount column with optional invert (many card exports list purchases as positive), or a debit/credit pair; optional id and balance columns; optional skip_rows.",
+        "Kabacus detects commas, semicolons and tabs as delimiters. It uses recognized column names to identify the delimiter and header, including in an export with only a header row. It reads UTF-8 with or without a BOM and falls back to Windows-1252.",
+        "Mapping: date column and date_format; one or more description columns; either one signed amount column with optional invert (many card exports list purchases as positive), or a debit/credit pair; optional id and balance columns; optional skip_rows. Even a file without transaction rows needs a complete mapping to import.",
         "Date format is detected only when every row agrees on one reading; an ambiguous file (03/04/2026) is refused until the format is given.",
         "Amounts are parsed exactly: thousands separators, a decimal comma, parentheses or a trailing minus for negatives, currency symbols. Never through floating point. An unreadable value is a row error naming line and column.",
         "A dry run with no mapping returns the detected columns, a guess at the mapping and the first rows, so a UI or agent can confirm it."
@@ -622,7 +622,7 @@ export const articles: readonly Article[] = [
       "items": [
         "List remote accounts: fetched from the caller's own access with balances-only=1. For each: Connection name, account name, currency, balance and date, the linked account if any. errlist is passed through as warnings (A7.4). Refresh accounts requests a fresh list and uses one request from the daily limit.",
         "Link: one remote account to one money or revolving-debt account; one-to-one in both directions. Stored on the account's declaration as tag simplefin-account: <conn_id>/<account id> (both parts, since an account id is unique only within its Connection; each part percent-encoded). Links are part of the books: versioned, shared by all members, and carried in every copy. Linking is an ordinary write (ledger-write, head, one revision); unlink removes the tag. The link operation can declare a new bank or credit card account and link it in the same revision. For a new card, Kabacus also declares the card’s configured reserve in that revision.",
-        "A person can link only a remote account their own access lists. Any member with ledger-write can unlink.",
+        "A person can link only a remote account their own access lists. Any member with ledger-write can unlink. To switch a card's feed in Settings, set the original feed to Don’t import, then choose the card on the new feed's row. Unlinking keeps imported transactions in their original ledger account.",
         "A remote account in another currency, or a custom currency, cannot be linked and says why.",
         "Unlinked remote accounts are ignored by sync and shown as \"not imported\".",
         "Shared books. A link says which remote account feeds an account; it does not say whose access reads it. When a member syncs, the accounts whose link names a Connection in their access are synced. Accounts linked through another member's access are left alone and shown as \"linked through another member's connection\". If two members can each see the same joint account at their bank, only one of them links it (the one-to-one rule refuses the second), because the two accesses would report different ids for the same transactions."
@@ -638,7 +638,7 @@ export const articles: readonly Article[] = [
         "Runs on request: a button, an MCP tool, a CLI command (which a person may schedule themselves). No background sync in the first release.",
         "A sync uses the caller's own access and is recorded as the caller's revision.",
         "One all-accounts request per sync: GET /accounts?version=2&start-date=…&end-date=…, without pending and without account, so it draws on one quota. Rows for accounts the caller has not linked are discarded. It then runs A4/A5 per linked account and commits one revision for all accounts. The result has one A4 result per account plus the warnings.",
-        "Window per account: since when given; else from 10 days before the latest SimpleFIN-imported transaction on that account; on an account's first sync, the person chooses the start date in the review step (default: the day after the account's latest balance assertion, else 30 days back). The request's start-date is the earliest of these, and rows before an account's own start are skipped. Overlap is safe because of import ids.",
+        "Window per account: since when given; else from 10 days before the latest imported transaction for that mapping. On a new mapping, the person chooses the start date in the review step (default: the day after the account's latest balance assertion, else 30 days back). The request's start-date is the earliest of these, and rows before an account's own start are skipped. Overlap is safe because of import ids.",
         "The window never exceeds 90 days. Kabacus refuses a longer one itself, with a message suggesting a file import for older history, rather than relying on the Bridge to cap it.",
         "Pending transactions are not requested. A row that still arrives with pending: true or posted: 0 is skipped and counted.",
         "Date: posted, as a UTC calendar date.",
