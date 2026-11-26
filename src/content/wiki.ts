@@ -2257,6 +2257,7 @@ export const articles: readonly Article[] = [
       ),
       h2("Languages"),
       p("The KDE app speaks the language your KDE settings or LANGUAGE ask for, in every language KDE’s translation teams cover. Right-to-left languages mirror the whole layout. Amounts keep the books’ own formatting. Text the server composes (its warnings and refusals) is not translated yet."),
+      p("The web app uses the same languages. It follows your browser’s language preferences in order, including regional and script variants where available. Change the order in your browser’s settings and reload Kabacus. If none of your preferred languages is available, Kabacus uses English."),
     ],
   },
   {
