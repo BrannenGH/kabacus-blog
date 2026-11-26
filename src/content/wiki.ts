@@ -51,7 +51,7 @@ export const articles: readonly Article[] = [
       "type": "ul",
       "items": [
         "Import a statement file into one chosen account: OFX/QFX and CSV.",
-        "Import from SimpleFIN: connect once, link remote accounts to accounts in the books, then review the first import and sync automatically while the app is open.",
+        "Import from SimpleFIN: connect once, link remote accounts to accounts in the books, then review the first import and check for new transactions automatically while the app is open.",
         "It works for books in a local .kabacus file: the access is kept in the file, so every app that opens the file can sync.",
         "It works on a server for many people: each person has their own access, which no one else can see or use.",
         "Target accounts: bank accounts (kind money) and credit cards (kind revolving-debt).",
@@ -635,15 +635,15 @@ export const articles: readonly Article[] = [
     {
       "type": "ul",
       "items": [
-        "Runs on request: a button, an MCP tool, a CLI command (which a person may schedule themselves). No background sync in the first release.",
-        "A sync uses the caller's own access and is recorded as the caller's revision.",
-        "One all-accounts request per sync: GET /accounts?version=2&start-date=…&end-date=…, without pending and without account, so it draws on one quota. Rows for accounts the caller has not linked are discarded. It then runs A4/A5 per linked account and commits one revision for all accounts. The result has one A4 result per account plus the warnings.",
+        "Manual sync runs from the apps, MCP or CLI. The apps can also check in the background after the first reviewed import.",
+        "A sync uses the caller's own access. A confirmed import creates one ledger revision attributed to the caller.",
+        "One all-accounts request per sync: GET /accounts?version=2&start-date=…&end-date=…, without pending and without account, so it draws on one quota. Rows for accounts the caller has not linked are discarded. Review runs A4/A5 per linked account and returns one result per account plus the warnings.",
         "Window per account: since when given; else from 10 days before the latest imported transaction for that mapping. On a new mapping, the person chooses the start date in the review step (default: the day after the account's latest balance assertion, else 30 days back). The request's start-date is the earliest of these, and rows before an account's own start are skipped. Overlap is safe because of import ids.",
         "The window never exceeds 90 days. Kabacus refuses a longer one itself, with a message suggesting a file import for older history, rather than relying on the Bridge to cap it.",
         "Pending transactions are not requested. A row that still arrives with pending: true or posted: 0 is skipped and counted.",
         "Date: posted, as a UTC calendar date.",
-        "Preview and commit use the same data. A dry run returns a snapshot id; the fetched data is held in memory for 15 minutes; the commit names the snapshot. Only the person who made a snapshot can commit it. An expired snapshot is snapshot_expired and the client previews again. A fetch within 15 minutes of that person's last one reuses its data unless refresh: true.",
-        "Automatic sync. After a manual import adds or matches a transaction on a mapping, Kabacus checks for new activity while the app is active and the person has write access. It checks on return to the app and every 15 minutes while active. An automatic check can fetch once six hours have passed since the last SimpleFIN request on that access, across all devices. It starts from the end of the reviewed window and looks back at most 90 days. If several transactions could match the same row, open the manual review to choose. Unlinking clears the reviewed window for that mapping.",
+        "Preview and commit use the same data. A manual fetch is held in memory for 15 minutes, and a dry run returns the snapshot ID for the commit. Only the owner of a snapshot can commit it. When a snapshot expires or a background sync updates the saved queue, preview again. A manual fetch within 15 minutes of that person's last one can reuse the data unless refresh: true.",
+        "Automatic sync. After a manual import adds or matches a transaction on a mapping, Kabacus checks for new activity while the app is active and the person has write access. It checks on return to the app and every 15 minutes while active. An automatic check can fetch once six hours have passed since the last SimpleFIN request on that access, across all devices. It starts at or after the end of the reviewed window and looks back at most 90 days. It saves posted transactions awaiting review in the books database without creating a ledger revision. Saved transactions remain available across restarts and later fetches. Open the queue to choose between possible matches and confirm the import. Unlinking clears the reviewed window for that mapping.",
         "Request budget. Each access records the times of its recent requests alongside the Access URL. Kabacus refuses a fetch that would be the 21st in 24 hours for that access and says when the next is allowed, because going over the Bridge's quota disables the access. Budgets are per access, so one member cannot use up another's.",
         "Responses",
         "403 from /accounts: the access was revoked or is invalid. Nothing imported; the person is told to reconnect.",
@@ -665,7 +665,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "The access is kept in the books' store, next to the books, in both the SQLite and the PostgreSQL store, behaving identically. The SQLite store's schema is the .kabacus file format, so the file format gains this and a local file carries its own SimpleFIN access. Nothing is kept in a platform keyring, an environment variable or the server's configuration."
+      "text": "The access is kept in the books' store, next to the books, in both the SQLite and the PostgreSQL store, behaving identically. The SQLite store's schema is the .kabacus file format, so the file format gains this and a local file carries its own SimpleFIN access. Nothing is kept in a platform keyring, an environment variable or the server's configuration. The queue belongs to the same access and is cleared when it is disconnected or replaced. Book exports omit the queue and the access."
     },
     {
       "type": "p",
@@ -724,7 +724,7 @@ export const articles: readonly Article[] = [
         [
           "GET /simplefin/connection",
           "get_simplefin_connection",
-          "read (own status)"
+          "read (own status, with pending_count for transactions awaiting import)"
         ],
         [
           "PUT /simplefin/connection",
@@ -749,7 +749,7 @@ export const articles: readonly Article[] = [
         [
           "POST /simplefin/sync",
           "sync_simplefin",
-          "write. Use automatic: true to run a due automatic sync on the supplied head."
+          "needs ledger-write. Use automatic: true to fetch and save due transactions without writing to the ledger. Use pending: true to preview the saved queue without a bank request, then send pending: true, dry_run: false and the previewed snapshot and head to import."
         ]
       ]
     },
@@ -776,7 +776,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "To import, select Sync in Settings → Bank connections or from a linked account’s register. Select Review, check the transactions and any warnings, then select Import. You can adjust each account’s start date and review again. Select Categorize to open the imported transactions that still need a category. After the first import, Kabacus checks for new activity automatically while the app is active. Use Sync in Bank connections whenever you want to review the import yourself."
+      "text": "To import, select Sync in Settings → Bank connections or from a linked account’s register. Select Review, check the transactions and any warnings, then select Import. You can adjust each account’s start date and review again. Select Categorize to open the imported transactions that still need a category. After the first import, Kabacus checks for new activity automatically while the app is active. When saved transactions are waiting, a Transactions to import banner at the top of Overview shows their count. Select it to review the saved transactions, then select Import to add or match them in your books. You can reopen the review later or use Sync in Bank connections to fetch a date range manually."
     },
     {
       "type": "p",
