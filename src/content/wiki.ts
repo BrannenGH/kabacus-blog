@@ -62,7 +62,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Not in the first release (see A10): categorization rules, payee clean-up, transfer matching, pending transactions, unattended server scheduling, investments, loans, other currencies, QIF/CAMT/MT940, more than one SimpleFIN access per person per books."
+      "text": "Not in the first release (see A10): categorization rules, payee clean-up, transfer matching, pending transactions, unattended server scheduling, investments, loans, custom currencies, QIF/CAMT/MT940, more than one SimpleFIN access per person per books."
     },
     {
       "type": "h2",
@@ -188,7 +188,7 @@ export const articles: readonly Article[] = [
     {
       "type": "ul",
       "items": [
-        "A source in a currency other than the books' commodity: currency_mismatch, nothing imported. This includes SimpleFIN custom currencies, whose currency is a URL (reward points and the like); the URL is never fetched.",
+        "An invalid currency code or a SimpleFIN custom currency URL gives unsupported_currency. Kabacus never fetches the URL.",
         "An amount with more decimal places than the commodity takes is a row error. OFX and SimpleFIN amounts with more than one sign are also row errors. A row error refuses the whole import.",
         "A zero-amount row is skipped and reported.",
         "A target that is not money or revolving-debt, or is synthetic: account_kind."
@@ -200,7 +200,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "One operation, used by files and by SimpleFIN sync. It follows the existing write contract."
+      "text": "One operation, used by files and by SimpleFIN sync. It follows the existing write contract. SimpleFIN, OFX and QFX use the currency reported by the source for matching, postings and balance checks. The review shows its currency code. Currency codes are matched regardless of case, and Kabacus treats $ as USD, € as EUR and £ as GBP for bank imports. If several equivalent symbols are declared, the import uses the one already used by the target account when it uses just one. Otherwise it prefers the declared currency code. Existing postings and declarations keep their original symbols. If the currency is new to the books, the first import that adds transactions declares it in the same revision. Kabacus does no currency conversion. CSV and files without a currency use the books’ default currency."
     },
     {
       "type": "ul",
@@ -220,7 +220,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "code",
-      "text": "{\n  \"head\": \"...\", \"dry_run\": true,\n  \"account\": \"assets:bank:checking\",\n  \"source\": {\"format\": \"ofx\", \"account_hint\": \"…6042\", \"from\": \"2026-09-01\", \"to\": \"2026-10-31\"},\n  \"counts\": {\"new\": 37, \"matched\": 4, \"duplicate\": 112, \"skipped\": 2, \"error\": 0},\n  \"rows\": [\n    {\"import_id\": \"ofx:20261014-0031\", \"date\": \"2026-10-14\", \"amount\": \"-62.18\",\n     \"description\": \"Corner Market\", \"outcome\": \"new\", \"transaction\": 5121},\n    {\"import_id\": \"ofx:20261015-0007\", \"date\": \"2026-10-15\", \"amount\": \"-18.40\",\n     \"description\": \"Harbor Street Cafe\", \"outcome\": \"matched\", \"transaction\": 5088,\n     \"candidates\": [5088]}\n  ],\n  \"balance_check\": {\"date\": \"2026-10-31\", \"reported\": \"2413.07\", \"books\": \"2413.07\", \"difference\": \"0.00\"},\n  \"warnings\": []\n}"
+      "text": "{\n  \"head\": \"...\", \"dry_run\": true,\n  \"account\": \"assets:bank:checking\",\n  \"source\": {\"format\": \"ofx\", \"account_hint\": \"…6042\", \"currency\": \"USD\", \"from\": \"2026-09-01\", \"to\": \"2026-10-31\"},\n  \"counts\": {\"new\": 37, \"matched\": 4, \"duplicate\": 112, \"skipped\": 2, \"error\": 0},\n  \"rows\": [\n    {\"import_id\": \"ofx:20261014-0031\", \"date\": \"2026-10-14\", \"amount\": \"-62.18\",\n     \"description\": \"Corner Market\", \"outcome\": \"new\", \"transaction\": 5121},\n    {\"import_id\": \"ofx:20261015-0007\", \"date\": \"2026-10-15\", \"amount\": \"-18.40\",\n     \"description\": \"Harbor Street Cafe\", \"outcome\": \"matched\", \"transaction\": 5088,\n     \"candidates\": [5088]}\n  ],\n  \"balance_check\": {\"date\": \"2026-10-31\", \"reported\": \"2413.07\", \"books\": \"2413.07\", \"difference\": \"0.00\"},\n  \"warnings\": []\n}"
     },
     {
       "type": "ul",
@@ -345,7 +345,7 @@ export const articles: readonly Article[] = [
       "items": [
         "OFX 1.x (SGML) and 2.x (XML, including files without an XML declaration); bank (BANKMSGSRSV1) and credit card (CREDITCARDMSGSRSV1) statements.",
         "Per STMTTRN: DTPOSTED → date (the date as written, ignoring the time zone offset), TRNAMT → amount, FITID → id, NAME/PAYEE/MEMO → description. A malformed timestamp is a row error.",
-        "CURDEF → currency check. LEDGERBAL → balance check.",
+        "CURDEF → currency for the import. LEDGERBAL → balance check.",
         "A file with several statements: the result lists them (account_hint, type, row count) and the request says which one (statement index). Importing needs exactly one chosen.",
         "Guards, as warnings in the preview: a credit card statement into a bank account or the reverse; a file whose account number differs from the one this account last imported from. The account's last four characters are remembered as a declaration tag (import-account: ofx:…6042); the full number is never stored."
       ]
@@ -623,7 +623,7 @@ export const articles: readonly Article[] = [
         "List remote accounts: fetched from the caller's own access with balances-only=1. For each: Connection name, account name, currency, balance and date, the linked account if any. errlist is passed through as warnings (A7.4). Refresh accounts requests a fresh list and uses one request from the daily limit.",
         "Link: one remote account to one money or revolving-debt account; one-to-one in both directions. Stored on the account's declaration as tag simplefin-account: <conn_id>/<account id> (both parts, since an account id is unique only within its Connection; each part percent-encoded). Links are part of the books: versioned, shared by all members, and carried in every copy. Linking is an ordinary write (ledger-write, head, one revision); unlink removes the tag. The link operation can declare a new bank or credit card account and link it in the same revision. For a new card, Kabacus also declares the card’s configured reserve in that revision.",
         "A person can link only a remote account their own access lists. Any member with ledger-write can unlink. To switch a card's feed in Settings, set the original feed to Don’t import, then choose the card on the new feed's row. Unlinking keeps imported transactions in their original ledger account.",
-        "A remote account in another currency, or a custom currency, cannot be linked and says why.",
+        "A remote account can be linked with a three-letter currency code or a recognized currency symbol. Custom currency URLs are refused.",
         "Unlinked remote accounts are ignored by sync and shown as \"not imported\".",
         "Shared books. A link says which remote account feeds an account; it does not say whose access reads it. When a member syncs, the accounts whose link names a Connection in their access are synced. Accounts linked through another member's access are left alone and shown as \"linked through another member's connection\". If two members can each see the same joint account at their bank, only one of them links it (the one-to-one rule refuses the second), because the two accesses would report different ids for the same transactions."
       ]
@@ -799,7 +799,7 @@ export const articles: readonly Article[] = [
     },
     {
       "type": "p",
-      "text": "Recorded so the first release leaves room for them and does not half-build them: rules that categorize or rename by payee; recognising the two halves of a transfer or card payment and merging them; pending transactions; server-side scheduling for when all apps are closed; loans, investments and holdings; other currencies; QIF, CAMT.053, MT940; several SimpleFIN accesses per person; SimpleFIN protocol version 1 servers; using mcc, the bank's raw memo, extra or transacted_at; attaching the original file."
+      "text": "Recorded so the first release leaves room for them and does not half-build them: rules that categorize or rename by payee; recognising the two halves of a transfer or card payment and merging them; pending transactions; server-side scheduling for when all apps are closed; loans, investments and holdings; custom currencies; QIF, CAMT.053, MT940; several SimpleFIN accesses per person; SimpleFIN protocol version 1 servers; using mcc, the bank's raw memo, extra or transacted_at; attaching the original file."
     },
     {
       "type": "h2",
@@ -824,7 +824,7 @@ export const articles: readonly Article[] = [
         "A credit card OFX with purchases, one refund and one payment: after import the card's reserve equals what the card owes, and cash_on_hand shows no new reserve-mismatch.",
         "A card payment present in both the checking and card imports: after both, the net effect on every account equals one pay_card of that amount, and uncategorized nets to zero for the pair while both still appear in the Categorize list.",
         "A CSV with 03/04/2026 dates and no format given is refused with a message asking for the date format; with the format it imports.",
-        "A EUR file into USD books: currency_mismatch, nothing written.",
+        "For a EUR file imported into books with USD transactions, match only EUR postings and write new postings in EUR.",
         "A stale head on commit: conflict, nothing written."
       ]
     },
